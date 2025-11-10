@@ -3,15 +3,15 @@ import { KanbanColumn } from "./KanbanColumn";
 
 interface KanbanBoardProps {
   tasks: Task[];
-  onMoveTask: (taskId: number, newStatus: Task["status"]) => void;
+  onMoveTask: (taskId: number, newStatus: Task["estado"]) => void;
   onEditTask: (task: Task) => void;
   onDeleteTask: (id: number) => void;
 }
 
 const columns = [
-  { id: "pending" as const, title: "Pendiente", color: "border-accent" },
-  { id: "in-progress" as const, title: "En Progreso", color: "border-blue" },
-  { id: "completed" as const, title: "Completada", color: "border-light-green" },
+  { id: "Pendiente" as const, title: "Pendiente", color: "border-accent" },
+  { id: "En Progreso" as const, title: "En Progreso", color: "border-blue" },
+  { id: "Completada" as const, title: "Completada", color: "border-light-green" },
 ];
 
 export function KanbanBoard({ tasks, onMoveTask, onEditTask, onDeleteTask }: KanbanBoardProps) {
@@ -21,7 +21,7 @@ export function KanbanBoard({ tasks, onMoveTask, onEditTask, onDeleteTask }: Kan
         <KanbanColumn
           key={column.id}
           column={column}
-          tasks={tasks.filter((task) => task.status === column.id)}
+          tasks={tasks.filter((task) => task.estado === column.id)}
           onMoveTask={onMoveTask}
           onEditTask={onEditTask}
           onDeleteTask={onDeleteTask}
