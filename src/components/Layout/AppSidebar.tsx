@@ -10,19 +10,14 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar";
-import { BookOpen, Calendar, CheckSquare, FileText, FolderKanban, LayoutDashboard, Mail, Target, Users } from "lucide-react";
+import { BookOpen, Calendar, FileText, FolderKanban, LayoutDashboard, Mail, Target, Users } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Semilleros", url: "/semilleros", icon: BookOpen },
+  { title: "Semillero", url: "/semilleros", icon: BookOpen },
   { title: "Campos", url: "/campos", icon: Target },
-  { title: "Proyectos", url: "/proyectos", icon: FolderKanban },
-  { title: "Tareas", url: "/tareas", icon: CheckSquare },
-  { title: "Eventos", url: "/eventos", icon: Calendar },
   { title: "Publicaciones", url: "/publicaciones", icon: FileText },
-  { title: "Contactos", url: "/contactos", icon: Mail },
-  { title: "Usuarios", url: "/usuarios", icon: Users },
 ];
 
 export function AppSidebar() {

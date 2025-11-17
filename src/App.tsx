@@ -23,7 +23,6 @@ import Publicaciones from "./pages/Publicaciones";
 import Reportes from "./pages/Reportes";
 import SemilleroDetail from "./pages/SemilleroDetail";
 import Semilleros from "./pages/Semilleros";
-import Tasks from "./pages/Tasks";
 import Users from "./pages/Users";
 
 // Admin Pages
@@ -32,6 +31,7 @@ import AdminSemilleros from "./pages/AdminSemilleros";
 // Public Pages
 import CampoPublicDetail from "./pages/CampoPublicDetail";
 import ProyectoPublicDetail from "./pages/ProyectoPublicDetail";
+import ProyectoActividades from "./pages/ProyectoActividades";
 import EventosPublic from "./pages/public/EventosPublic";
 import SemilleroPublicDetail from "./pages/public/SemilleroPublicDetail";
 import PublicacionPublicDetail from "./pages/PublicacionPublicDetail";
@@ -52,14 +52,16 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/public/semillero/:id" element={<SemilleroPublicDetail />} />
             <Route path="/public/campo/:id" element={<CampoPublicDetail />} />
-            <Route path="/public/proyecto/:id" element={<ProyectoPublicDetail />} />
+            <Route path="/public/proyecto/:id" element={<AppLayout><ProyectoPublicDetail /></AppLayout>} />
             <Route path="/public/publicacion/:id" element={<PublicacionPublicDetail />} />
             <Route path="/public/eventos" element={<EventosPublic />} />
 
             {/* Protected Routes */}
             <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
             <Route path="/proyectos" element={<AppLayout><Projects /></AppLayout>} />
-            <Route path="/tareas" element={<AppLayout><Tasks /></AppLayout>} />
+            <Route path="/projects/:id" element={<AppLayout><ProyectoPublicDetail /></AppLayout>} />
+            <Route path="/projects/:id/actividades" element={<AppLayout><ProyectoActividades /></AppLayout>} />
+            <Route path="/proyecto/:id/actividades" element={<AppLayout><ProyectoActividades /></AppLayout>} />
             <Route path="/usuarios" element={<AppLayout><Users /></AppLayout>} />
             <Route path="/semilleros" element={<AppLayout><Semilleros /></AppLayout>} />
             <Route path="/semilleros/:id" element={<AppLayout><SemilleroDetail /></AppLayout>} />

@@ -65,8 +65,16 @@ export default function MiSemillero() {
   // Crear campo
   const [openCrearCampo, setOpenCrearCampo] = useState(false);
   const [crearCampoSubmitting, setCrearCampoSubmitting] = useState(false);
-  const [nuevoCampo, setNuevoCampo] = useState({ nombre: '', descripcion: '', contacto: '' });
+  const [nuevoCampo, setNuevoCampo] = useState({ 
+    nombre: '', 
+    descripcion: '', 
+    lider: '',
+    horario_reunion: '',
+    contacto_email: '',
+    contacto_redes_sociales: ''
+  });
   const [nuevoCampoImagen, setNuevoCampoImagen] = useState<File | null>(null);
+  const [nuevoCampoImagenPreview, setNuevoCampoImagenPreview] = useState<string>('');
 
   // Agregar integrante existente
   const [openAgregarExistente, setOpenAgregarExistente] = useState(false);
@@ -156,7 +164,23 @@ export default function MiSemillero() {
 
   const handleNuevoCampoImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setNuevoCampoImagen(file);
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Imagen muy grande',
+          description: 'La imagen no debe superar 5MB',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      setNuevoCampoImagen(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNuevoCampoImagenPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -261,24 +285,62 @@ export default function MiSemillero() {
       return;
     }
 
+    if (!nuevoCampo.lider || !nuevoCampo.lider.trim()) {
+      toast({ title: 'Líder requerido', description: 'Debes especificar el ID del usuario líder', variant: 'destructive' });
+      return;
+    }
+
+    if (!nuevoCampo.descripcion.trim()) {
+      toast({ title: 'Descripción requerida', description: 'Indica la descripción del campo', variant: 'destructive' });
+      return;
+    }
+
     try {
       setCrearCampoSubmitting(true);
       const data = new FormData();
       data.append('nombre', nuevoCampo.nombre);
-      data.append('descripcion', nuevoCampo.descripcion || '');
-      data.append('contacto', nuevoCampo.contacto || '');
-      if (nuevoCampoImagen) data.append('imagen', nuevoCampoImagen);
+      data.append('lider', nuevoCampo.lider);
+      data.append('descripcion', nuevoCampo.descripcion);
+      
+      // Campos opcionales
+      if (nuevoCampo.horario_reunion) {
+        data.append('horario_reunion', nuevoCampo.horario_reunion);
+      }
+      if (nuevoCampo.contacto_email) {
+        data.append('contacto_email', nuevoCampo.contacto_email);
+      }
+      if (nuevoCampo.contacto_redes_sociales) {
+        data.append('contacto_redes_sociales', nuevoCampo.contacto_redes_sociales);
+      }
+      if (nuevoCampoImagen) {
+        data.append('imagen', nuevoCampoImagen);
+      }
 
+      // id_semillero se auto-asigna en el backend basado en el usuario autenticado
       const created = await camposService.create(data);
+      
       // Recargar campos
       const misCampos = await camposService.getMisCampos();
       setCampos(misCampos || []);
       setOpenCrearCampo(false);
-      setNuevoCampo({ nombre: '', descripcion: '', contacto: '' });
+      setNuevoCampo({ 
+        nombre: '', 
+        descripcion: '', 
+        lider: '',
+        horario_reunion: '',
+        contacto_email: '',
+        contacto_redes_sociales: ''
+      });
       setNuevoCampoImagen(null);
+      setNuevoCampoImagenPreview('');
       toast({ title: 'Campo creado', description: 'El campo de investigación fue creado correctamente' });
     } catch (error: any) {
-      toast({ title: 'Error al crear campo', description: error.response?.data?.message || 'No fue posible crear el campo', variant: 'destructive' });
+      console.error('❌ Error al crear campo:', error);
+      toast({ 
+        title: 'Error al crear campo', 
+        description: error.response?.data?.message || error.message || 'No fue posible crear el campo', 
+        variant: 'destructive' 
+      });
     } finally {
       setCrearCampoSubmitting(false);
     }
@@ -637,7 +699,7 @@ export default function MiSemillero() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {campos.map((campo) => (
-                <Card key={campo.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/campo/${campo.id}`)}>
+                <Card key={campo.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/campos/${campo.id}`)}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -683,30 +745,146 @@ export default function MiSemillero() {
 
         {/* Dialog: Crear Campo */}
         <Dialog open={openCrearCampo} onOpenChange={setOpenCrearCampo}>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Crear Campo de Investigación</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCrearCampo} className="space-y-4">
+              {/* Preview de imagen */}
+              {nuevoCampoImagenPreview && (
+                <div className="flex justify-center">
+                  <img 
+                    src={nuevoCampoImagenPreview} 
+                    alt="Preview" 
+                    className="w-32 h-32 object-cover rounded-lg border-2 border-border"
+                  />
+                </div>
+              )}
+              
               <div className="space-y-2">
-                <Label>Nombre</Label>
-                <Input value={nuevoCampo.nombre} onChange={(e) => setNuevoCampo(prev => ({ ...prev, nombre: e.target.value }))} required />
+                <Label htmlFor="campo-nombre">
+                  Nombre del Campo *
+                </Label>
+                <Input 
+                  id="campo-nombre"
+                  value={nuevoCampo.nombre} 
+                  onChange={(e) => setNuevoCampo(prev => ({ ...prev, nombre: e.target.value }))} 
+                  placeholder="Ej: Inteligencia Artificial"
+                  required 
+                />
               </div>
+              
               <div className="space-y-2">
-                <Label>Descripción</Label>
-                <Textarea value={nuevoCampo.descripcion} onChange={(e) => setNuevoCampo(prev => ({ ...prev, descripcion: e.target.value }))} rows={4} />
+                <Label htmlFor="campo-lider">
+                  ID del Líder (Usuario) *
+                </Label>
+                <Input 
+                  id="campo-lider"
+                  type="number"
+                  value={nuevoCampo.lider} 
+                  onChange={(e) => setNuevoCampo(prev => ({ ...prev, lider: e.target.value }))} 
+                  placeholder="Ej: 2"
+                  required 
+                />
+                <p className="text-xs text-muted-foreground">
+                  ID del usuario que será líder del campo (debe tener rol 2)
+                </p>
               </div>
+              
               <div className="space-y-2">
-                <Label>Contacto</Label>
-                <Input value={nuevoCampo.contacto} onChange={(e) => setNuevoCampo(prev => ({ ...prev, contacto: e.target.value }))} />
+                <Label htmlFor="campo-descripcion">
+                  Descripción *
+                </Label>
+                <Textarea 
+                  id="campo-descripcion"
+                  value={nuevoCampo.descripcion} 
+                  onChange={(e) => setNuevoCampo(prev => ({ ...prev, descripcion: e.target.value }))} 
+                  placeholder="Describe el campo de investigación..."
+                  rows={4}
+                  required
+                />
               </div>
+              
               <div className="space-y-2">
-                <Label>Imagen</Label>
-                <Input type="file" accept="image/*" onChange={handleNuevoCampoImageChange} />
+                <Label htmlFor="campo-imagen">
+                  Imagen (JPG, PNG)
+                </Label>
+                <Input 
+                  id="campo-imagen"
+                  type="file" 
+                  accept="image/jpeg,image/png" 
+                  onChange={handleNuevoCampoImageChange}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Máximo 5MB. Formatos: JPG, PNG
+                </p>
               </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="campo-horario">
+                  Horario de Reuniones
+                </Label>
+                <Input 
+                  id="campo-horario"
+                  value={nuevoCampo.horario_reunion} 
+                  onChange={(e) => setNuevoCampo(prev => ({ ...prev, horario_reunion: e.target.value }))} 
+                  placeholder="Ej: Lunes 3:00 PM - 5:00 PM"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="campo-email">
+                  Email de Contacto
+                </Label>
+                <Input 
+                  id="campo-email"
+                  type="email"
+                  value={nuevoCampo.contacto_email} 
+                  onChange={(e) => setNuevoCampo(prev => ({ ...prev, contacto_email: e.target.value }))} 
+                  placeholder="contacto@campo.edu"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="campo-redes">
+                  Redes Sociales (JSON)
+                </Label>
+                <Textarea 
+                  id="campo-redes"
+                  value={nuevoCampo.contacto_redes_sociales} 
+                  onChange={(e) => setNuevoCampo(prev => ({ ...prev, contacto_redes_sociales: e.target.value }))} 
+                  placeholder='{"facebook": "url", "twitter": "url"}'
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Formato JSON con las redes sociales del campo
+                </p>
+              </div>
+              
               <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setOpenCrearCampo(false)}>Cancelar</Button>
-                <Button type="submit" disabled={crearCampoSubmitting}>{crearCampoSubmitting ? 'Creando...' : 'Crear Campo'}</Button>
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  onClick={() => {
+                    setOpenCrearCampo(false);
+                    setNuevoCampo({ 
+                      nombre: '', 
+                      descripcion: '', 
+                      lider: '',
+                      horario_reunion: '',
+                      contacto_email: '',
+                      contacto_redes_sociales: ''
+                    });
+                    setNuevoCampoImagen(null);
+                    setNuevoCampoImagenPreview('');
+                  }}
+                  disabled={crearCampoSubmitting}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={crearCampoSubmitting}>
+                  {crearCampoSubmitting ? 'Creando...' : 'Crear Campo'}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
