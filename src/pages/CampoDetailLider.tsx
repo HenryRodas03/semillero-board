@@ -8,6 +8,7 @@ import { UserDialog } from '@/components/users/UserDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { camposService } from '@/services/camposService';
+import { proyectosService } from '@/services/proyectosService';
 import { usuariosService } from '@/services/usuariosService';
 import { Edit, Image as ImageIcon, Plus, Save, Trash2, Users, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -59,6 +60,17 @@ export default function CampoDetailLider() {
   // Diálogo informativo (por ejemplo: editar pendiente)
   const [openInfoDialog, setOpenInfoDialog] = useState(false);
   const [infoMessage, setInfoMessage] = useState('');
+
+  // Crear proyecto
+  const [openCrearProyecto, setOpenCrearProyecto] = useState(false);
+  const [crearProyectoSubmitting, setCrearProyectoSubmitting] = useState(false);
+  const [nuevoProyecto, setNuevoProyecto] = useState({
+    titulo: '',
+    descripcion: '',
+    id_estado: 1, // Por defecto: 1 - En Progreso
+    url: '',
+    ruta_foto: ''
+  });
 
   useEffect(() => {
     if (!campoId) return;
@@ -249,6 +261,74 @@ export default function CampoDetailLider() {
     }
   };
 
+  const handleCrearProyecto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!nuevoProyecto.titulo.trim()) {
+      toast({ 
+        title: 'Título requerido', 
+        description: 'El título del proyecto es obligatorio', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    if (!nuevoProyecto.descripcion.trim()) {
+      toast({ 
+        title: 'Descripción requerida', 
+        description: 'La descripción del proyecto es obligatoria', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    try {
+      setCrearProyectoSubmitting(true);
+      
+      const proyectoData = {
+        titulo: nuevoProyecto.titulo,
+        descripcion: nuevoProyecto.descripcion,
+        id_campo: campoId,
+        id_estado: nuevoProyecto.id_estado,
+        url: nuevoProyecto.url || undefined,
+        ruta_foto: nuevoProyecto.ruta_foto || undefined
+      };
+
+      console.log('📝 Creando proyecto:', proyectoData);
+      
+      const created = await proyectosService.create(proyectoData);
+      
+      console.log('✅ Proyecto creado exitosamente:', created);
+      
+      // Recargar proyectos
+      await load();
+      
+      // Cerrar modal y limpiar formulario
+      setOpenCrearProyecto(false);
+      setNuevoProyecto({
+        titulo: '',
+        descripcion: '',
+        id_estado: 1,
+        url: '',
+        ruta_foto: ''
+      });
+      
+      toast({ 
+        title: 'Proyecto creado', 
+        description: 'El proyecto se ha creado correctamente' 
+      });
+    } catch (error: any) {
+      console.error('❌ Error al crear proyecto:', error);
+      toast({ 
+        title: 'Error al crear proyecto', 
+        description: error.response?.data?.message || error.message || 'No se pudo crear el proyecto', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setCrearProyectoSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -378,9 +458,23 @@ export default function CampoDetailLider() {
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <div>
-              <CardTitle>Proyectos en curso</CardTitle>
-              <CardDescription>Proyectos asociados al campo</CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle>Proyectos en curso</CardTitle>
+                <CardDescription>Proyectos asociados al campo</CardDescription>
+              </div>
+              {/* Botón crear proyecto - Solo visible para Admin Semillero (1) o Líder Campo (2) */}
+              {(user?.id_rol === 1 || user?.id_rol === 2) && (
+                <Button 
+                  size="sm" 
+                  onClick={() => setOpenCrearProyecto(true)}
+                  className="shrink-0 text-white"
+                  style={{ backgroundColor: '#008042' }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Crear Proyecto
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -594,6 +688,120 @@ export default function CampoDetailLider() {
             <DialogFooter>
               <Button onClick={() => setOpenInfoDialog(false)}>Aceptar</Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog: Crear Proyecto */}
+        <Dialog open={openCrearProyecto} onOpenChange={setOpenCrearProyecto}>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Crear Nuevo Proyecto</DialogTitle>
+              <DialogDescription>
+                Completa la información del proyecto que deseas crear en este campo de investigación.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCrearProyecto} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="proyecto-titulo">
+                  Título del Proyecto *
+                </Label>
+                <Input 
+                  id="proyecto-titulo"
+                  value={nuevoProyecto.titulo} 
+                  onChange={(e) => setNuevoProyecto(prev => ({ ...prev, titulo: e.target.value }))} 
+                  placeholder="Ej: Sistema de Gestión de Semilleros"
+                  required 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="proyecto-descripcion">
+                  Descripción *
+                </Label>
+                <Textarea 
+                  id="proyecto-descripcion"
+                  value={nuevoProyecto.descripcion} 
+                  onChange={(e) => setNuevoProyecto(prev => ({ ...prev, descripcion: e.target.value }))} 
+                  placeholder="Describe el objetivo y alcance del proyecto..."
+                  rows={4}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="proyecto-estado">
+                  Estado del Proyecto *
+                </Label>
+                <select
+                  id="proyecto-estado"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={nuevoProyecto.id_estado}
+                  onChange={(e) => setNuevoProyecto(prev => ({ ...prev, id_estado: Number(e.target.value) }))}
+                >
+                  <option value={1}>En Progreso</option>
+                  <option value={2}>Finalizado</option>
+                  <option value={3}>Pausado</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Selecciona el estado inicial del proyecto
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="proyecto-url">
+                  URL del Proyecto (opcional)
+                </Label>
+                <Input 
+                  id="proyecto-url"
+                  type="url"
+                  value={nuevoProyecto.url} 
+                  onChange={(e) => setNuevoProyecto(prev => ({ ...prev, url: e.target.value }))} 
+                  placeholder="https://github.com/usuario/proyecto"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enlace al repositorio, documentación o sitio web del proyecto
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="proyecto-foto">
+                  URL de la Imagen (opcional)
+                </Label>
+                <Input 
+                  id="proyecto-foto"
+                  type="url"
+                  value={nuevoProyecto.ruta_foto} 
+                  onChange={(e) => setNuevoProyecto(prev => ({ ...prev, ruta_foto: e.target.value }))} 
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                />
+                <p className="text-xs text-muted-foreground">
+                  URL de la imagen representativa del proyecto
+                </p>
+              </div>
+              
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  onClick={() => {
+                    setOpenCrearProyecto(false);
+                    setNuevoProyecto({
+                      titulo: '',
+                      descripcion: '',
+                      id_estado: 1,
+                      url: '',
+                      ruta_foto: ''
+                    });
+                  }}
+                  disabled={crearProyectoSubmitting}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={crearProyectoSubmitting}>
+                  {crearProyectoSubmitting ? 'Creando...' : 'Crear Proyecto'}
+                </Button>
+              </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
 

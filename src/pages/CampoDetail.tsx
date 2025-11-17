@@ -1,8 +1,602 @@
+import { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { camposService } from "@/services/camposService";
+import { proyectosService } from "@/services/proyectosService";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Loader2, 
+  ArrowLeft, 
+  Users, 
+  FolderKanban, 
+  Clock, 
+  Mail, 
+  Share2,
+  User,
+  AlertCircle,
+  Plus
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface Proyecto {
+  id: number;
+  titulo: string;
+  descripcion: string;
+  imagen?: string;
+  estado?: number;
+  porcentaje_avance?: number;
+  url?: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+}
+
+interface Integrante {
+  id: number;
+  id_usuario: number;
+  id_campo: number;
+  id_rol: number;
+  fecha_ingreso: string;
+  fecha_salida: string | null;
+  usuario: {
+    id: number;
+    nombre: string;
+    correo: string;
+  };
+  rol: {
+    id: number;
+    nombre: string;
+  };
+}
+
+interface Semillero {
+  id: number;
+  nombre: string;
+  lider: number;
+  ruta_imagen: string;
+  descripcion: string;
+  contacto: string;
+  creado_en: string;
+  lineas_investigacion_id: number;
+  activo: number;
+}
+
+interface LiderUsuario {
+  id: number;
+  nombre: string;
+  correo: string;
+}
+
+interface CampoDetail {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  ruta_imagen: string | null;
+  lider: number;
+  id_semillero: number;
+  horario_reunion: string | null;
+  contacto_email: string | null;
+  contacto_redes_sociales: any; // Puede ser string, null, o objeto vacío
+  semillero?: Semillero;
+  liderUsuario?: LiderUsuario;
+  proyectos: Proyecto[];
+  integrantes: Integrante[];
+  acceso_completo: boolean;
+}
+
+interface CampoResponse {
+  campo: CampoDetail;
+}
+
 export default function CampoDetail() {
+  const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [campo, setCampo] = useState<CampoDetail | null>(null);
+
+  // Crear proyecto
+  const [openCrearProyecto, setOpenCrearProyecto] = useState(false);
+  const [crearProyectoSubmitting, setCrearProyectoSubmitting] = useState(false);
+  const [nuevoProyecto, setNuevoProyecto] = useState({
+    titulo: '',
+    descripcion: '',
+    id_estado: 1,
+    url: '',
+    ruta_foto: ''
+  });
+
+  // Helper para verificar si contacto_redes_sociales tiene contenido
+  const hasRedesSociales = (redes: any): boolean => {
+    if (!redes) return false;
+    if (typeof redes === 'string' && redes.trim()) return true;
+    if (typeof redes === 'object' && Object.keys(redes).length > 0) return true;
+    return false;
+  };
+
+  // Helper para obtener el texto de redes sociales
+  const getRedesSocialesText = (redes: any): string => {
+    if (typeof redes === 'string') return redes;
+    if (typeof redes === 'object') return JSON.stringify(redes);
+    return '';
+  };
+
+  useEffect(() => {
+    if (id) {
+      loadCampoDetail();
+    }
+  }, [id]);
+
+  const loadCampoDetail = async () => {
+    if (!id) return;
+
+    try {
+      setLoading(true);
+      const response = await camposService.getById(parseInt(id));
+      console.log('📋 Detalle del campo:', response);
+      
+      // Manejar diferentes estructuras de respuesta
+      const campoData = (response as CampoResponse).campo || (response as CampoDetail);
+      setCampo(campoData);
+    } catch (error: any) {
+      console.error('❌ Error al cargar campo:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "No se pudo cargar la información del campo",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCrearProyecto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!nuevoProyecto.titulo.trim()) {
+      toast({ 
+        title: 'Título requerido', 
+        description: 'El título del proyecto es obligatorio', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    if (!nuevoProyecto.descripcion.trim()) {
+      toast({ 
+        title: 'Descripción requerida', 
+        description: 'La descripción del proyecto es obligatoria', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    if (!id) return;
+
+    try {
+      setCrearProyectoSubmitting(true);
+      
+      const proyectoData = {
+        titulo: nuevoProyecto.titulo,
+        descripcion: nuevoProyecto.descripcion,
+        id_campo: parseInt(id),
+        id_estado: nuevoProyecto.id_estado,
+        url: nuevoProyecto.url || undefined,
+        ruta_foto: nuevoProyecto.ruta_foto || undefined
+      };
+
+      console.log('📝 Creando proyecto:', proyectoData);
+      
+      await proyectosService.create(proyectoData);
+      
+      // Recargar el campo completo para actualizar proyectos
+      await loadCampoDetail();
+      
+      // Cerrar modal y limpiar formulario
+      setOpenCrearProyecto(false);
+      setNuevoProyecto({
+        titulo: '',
+        descripcion: '',
+        id_estado: 1,
+        url: '',
+        ruta_foto: ''
+      });
+      
+      toast({ 
+        title: 'Proyecto creado', 
+        description: 'El proyecto se ha creado correctamente' 
+      });
+    } catch (error: any) {
+      console.error('❌ Error al crear proyecto:', error);
+      toast({ 
+        title: 'Error al crear proyecto', 
+        description: error.response?.data?.message || error.message || 'No se pudo crear el proyecto', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setCrearProyectoSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!campo) {
+    return (
+      <div className="p-6">
+        <Button asChild variant="ghost" className="mb-4">
+          <Link to="/campos">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Link>
+        </Button>
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+              <p className="text-lg font-medium">Campo no encontrado</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                El campo solicitado no existe o no tienes permiso para verlo
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Detalle de Campo</h1>
-      <p className="text-muted-foreground">Página de detalle de campo - En construcción</p>
+    <div className="p-6 space-y-6">
+      {/* Header con botón volver */}
+      <div className="flex items-center gap-4">
+        <Button asChild variant="ghost">
+          <Link to="/campos">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Link>
+        </Button>
+      </div>
+
+      {/* Información Principal */}
+      <Card>
+        <CardHeader>
+          {campo.ruta_imagen && (
+            <div className="w-full h-64 mb-4 rounded-lg overflow-hidden bg-gray-100">
+              <img
+                src={campo.ruta_imagen}
+                alt={campo.nombre}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          <div className="flex items-start justify-between">
+            <div className="space-y-2">
+              <CardTitle className="text-3xl">{campo.nombre}</CardTitle>
+              <CardDescription className="text-base">
+                {campo.descripcion}
+              </CardDescription>
+            </div>
+            {!campo.acceso_completo && (
+              <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                Acceso Limitado
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <Separator />
+
+          {/* Información de Contacto */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Información de Contacto</h3>
+            <div className="grid gap-3">
+              {campo.horario_reunion && (
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Horario de Reunión</p>
+                    <p className="text-sm text-muted-foreground">{campo.horario_reunion}</p>
+                  </div>
+                </div>
+              )}
+              
+              {campo.contacto_email && (
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Email de Contacto</p>
+                    <p className="text-sm text-muted-foreground">{campo.contacto_email}</p>
+                  </div>
+                </div>
+              )}
+              
+              {hasRedesSociales(campo.contacto_redes_sociales) && (
+                <div className="flex items-center gap-3">
+                  <Share2 className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Redes Sociales</p>
+                    <p className="text-sm text-muted-foreground">{getRedesSocialesText(campo.contacto_redes_sociales)}</p>
+                  </div>
+                </div>
+              )}
+
+              {campo.liderUsuario && (
+                <div className="flex items-center gap-3">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Líder del Campo</p>
+                    <p className="text-sm text-muted-foreground">
+                      {campo.liderUsuario.nombre} • {campo.liderUsuario.correo}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Estadísticas Rápidas */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <FolderKanban className="h-4 w-4" />
+                  Proyectos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{campo.proyectos.length}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Integrantes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{campo.integrantes.length}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Proyectos */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FolderKanban className="h-5 w-5" />
+              Proyectos ({campo.proyectos.length})
+            </CardTitle>
+            {/* Botón crear proyecto - Solo visible para Admin Semillero (1) o Líder Campo (2) */}
+            {(user?.id_rol === 1 || user?.id_rol === 2) && (
+              <Button 
+                size="sm" 
+                onClick={() => setOpenCrearProyecto(true)}
+                className="shrink-0 text-white"
+                style={{ backgroundColor: '#008042' }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Crear Proyecto
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {campo.proyectos.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No hay proyectos en este campo
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {campo.proyectos.map((proyecto) => (
+                <Card key={proyecto.id} className="hover:shadow-md hover:border-primary/50 transition-all">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-base">{proyecto.titulo}</CardTitle>
+                        <CardDescription>{proyecto.descripcion}</CardDescription>
+                      </div>
+                      {proyecto.porcentaje_avance !== undefined && (
+                        <Badge variant="secondary">
+                          {proyecto.porcentaje_avance}% Avance
+                        </Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {proyecto.url && (
+                      <a 
+                        href={proyecto.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                      >
+                        🔗 {proyecto.url}
+                      </a>
+                    )}
+                    <Button asChild size="sm" variant="outline" className="w-full">
+                      <Link to={`/projects/${proyecto.id}`}>
+                        Ver Proyecto
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Integrantes */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Integrantes ({campo.integrantes.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {campo.integrantes.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No hay integrantes registrados
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {campo.integrantes.map((integrante) => (
+                <Card key={integrante.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      {integrante.usuario.nombre}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="h-3 w-3" />
+                      {integrante.usuario.correo}
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {integrante.rol.nombre}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialog: Crear Proyecto */}
+      <Dialog open={openCrearProyecto} onOpenChange={setOpenCrearProyecto}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Crear Nuevo Proyecto</DialogTitle>
+            <DialogDescription>
+              Completa la información del proyecto que deseas crear en este campo de investigación.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCrearProyecto} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="proyecto-titulo">
+                Título del Proyecto *
+              </Label>
+              <Input 
+                id="proyecto-titulo"
+                value={nuevoProyecto.titulo} 
+                onChange={(e) => setNuevoProyecto(prev => ({ ...prev, titulo: e.target.value }))} 
+                placeholder="Ej: Sistema de Gestión de Semilleros"
+                required 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="proyecto-descripcion">
+                Descripción *
+              </Label>
+              <Textarea 
+                id="proyecto-descripcion"
+                value={nuevoProyecto.descripcion} 
+                onChange={(e) => setNuevoProyecto(prev => ({ ...prev, descripcion: e.target.value }))} 
+                placeholder="Describe el objetivo y alcance del proyecto..."
+                rows={4}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="proyecto-estado">
+                Estado del Proyecto *
+              </Label>
+              <select
+                id="proyecto-estado"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={nuevoProyecto.id_estado}
+                onChange={(e) => setNuevoProyecto(prev => ({ ...prev, id_estado: Number(e.target.value) }))}
+              >
+                <option value={1}>En Progreso</option>
+                <option value={2}>Finalizado</option>
+                <option value={3}>Pausado</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Selecciona el estado inicial del proyecto
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="proyecto-url">
+                URL del Proyecto (opcional)
+              </Label>
+              <Input 
+                id="proyecto-url"
+                type="url"
+                value={nuevoProyecto.url} 
+                onChange={(e) => setNuevoProyecto(prev => ({ ...prev, url: e.target.value }))} 
+                placeholder="https://github.com/usuario/proyecto"
+              />
+              <p className="text-xs text-muted-foreground">
+                Enlace al repositorio, documentación o sitio web del proyecto
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="proyecto-foto">
+                URL de la Imagen (opcional)
+              </Label>
+              <Input 
+                id="proyecto-foto"
+                type="url"
+                value={nuevoProyecto.ruta_foto} 
+                onChange={(e) => setNuevoProyecto(prev => ({ ...prev, ruta_foto: e.target.value }))} 
+                placeholder="https://ejemplo.com/imagen.jpg"
+              />
+              <p className="text-xs text-muted-foreground">
+                URL de la imagen representativa del proyecto
+              </p>
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                type="button" 
+                onClick={() => {
+                  setOpenCrearProyecto(false);
+                  setNuevoProyecto({
+                    titulo: '',
+                    descripcion: '',
+                    id_estado: 1,
+                    url: '',
+                    ruta_foto: ''
+                  });
+                }}
+                disabled={crearProyectoSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={crearProyectoSubmitting}>
+                {crearProyectoSubmitting ? 'Creando...' : 'Crear Proyecto'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

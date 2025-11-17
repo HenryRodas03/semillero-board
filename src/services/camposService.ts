@@ -50,7 +50,31 @@ export const camposService = {
   },
 
   getIntegrantes: async (id: number) => {
-    const response = await api.get(`/campos/${id}/integrantes`);
+    const response = await api.get(`/public/campos/${id}/integrantes`);
+    // La respuesta tiene estructura: { data: { activos: { integrantes: [] }, antiguos: { integrantes: [] } } }
+    if (response.data.data) {
+      const data = response.data.data;
+      // Combinar integrantes activos y antiguos, priorizando activos
+      const integrantesActivos = data.activos?.integrantes || [];
+      const integrantesAntiguos = data.antiguos?.integrantes || [];
+      
+      // Convertir ambos arrays al formato esperado
+      const todosLosIntegrantes = [...integrantesActivos, ...integrantesAntiguos].map((integrante: any) => ({
+        id: integrante.id,
+        nombre: integrante.usuario.nombre,
+        correo: integrante.usuario.correo,
+        rol_id: integrante.rol_id,
+        fecha_incorporacion: integrante.fecha_incorporacion,
+        esActivo: integrantesActivos.includes(integrante),
+        usuario: {
+          id: integrante.usuario.id,
+          nombre: integrante.usuario.nombre,
+          correo: integrante.usuario.correo
+        }
+      }));
+      
+      return todosLosIntegrantes;
+    }
     return response.data.integrantes || response.data.members || response.data;
   },
 
@@ -139,6 +163,11 @@ export const camposService = {
 
   cambiarEstado: async (id: number, activo: number) => {
     const response = await api.patch(`/campos/${id}/estado`, { activo });
+    return response.data;
+  },
+
+  getMisCamposUsuario: async () => {
+    const response = await api.get('/campos/usuario/mis-campos');
     return response.data;
   }
 };
