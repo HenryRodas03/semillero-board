@@ -2,8 +2,17 @@ import api from './api';
 
 export const authService = {
   login: async (correo: string, password: string) => {
-    const response = await api.post('/auth/login', { correo, contrasena: password });
-    return response.data;
+    const url = (api.defaults.baseURL || '') + '/auth/login';
+    const payload = { correo, contrasena: password };
+    try {
+      console.debug('AuthService - POST', url, payload);
+      const response = await api.post('/auth/login', payload);
+      console.debug('AuthService - response', response.status, response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('AuthService - login error:', error?.response?.status, error?.response?.data);
+      throw error;
+    }
   },
 
   register: async (userData: any) => {
