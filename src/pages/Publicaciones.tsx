@@ -22,7 +22,7 @@ export default function Publicaciones() {
     loadUserCampo();
   }, [user]);
 
-  // Si cambia la selección del diálogo (por ejemplo al editar o crear), recargar publicaciones del campo seleccionado
+
   useEffect(() => {
     if (dialogSelectedCampoId) {
       setCampoId(dialogSelectedCampoId);

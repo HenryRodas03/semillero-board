@@ -1,8 +1,15 @@
 import axios from 'axios';
 
+// Prefer runtime variable (window.__RUNTIME_API_URL), luego VITE_API_URL y finalmente
+// la URL de producción indicada por el equipo si ninguna de las dos anteriores existe.
+const runtimeUrl = (typeof window !== 'undefined' && (window as any).__RUNTIME_API_URL) || import.meta.env.VITE_API_URL || 'https://gestionproyectos-8cuz.onrender.com/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: runtimeUrl,
 });
+
+// Log de depuración para confirmar la URL base que usa el frontend
+console.debug('API baseURL inicializada:', api.defaults.baseURL);
 
 // Interceptor para agregar el token JWT a todas las peticiones
 api.interceptors.request.use(
