@@ -272,7 +272,7 @@ export default function Eventos() {
               onSelectSlot={(start, end) => {
                 if (hasPermission('crear_actividad')) {
                   setEditingEvento({
-                    fecha_inicio: start.toISOString(),
+                    fecha_creacion: start.toISOString(),
                     fecha_fin: end.toISOString(),
                   } as Evento);
                   setDialogOpen(true);

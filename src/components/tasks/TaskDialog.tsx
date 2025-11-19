@@ -40,7 +40,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave, projectId, campoI
       descripcion: "",
       estado: "Pendiente",
       prioridad: "Media",
-      fecha_inicio: new Date().toISOString().split('T')[0],
+      fecha_creacion: new Date().toISOString().split('T')[0],
       fecha_fin: "",
       id_proyecto: projectId || 1,
     },
@@ -57,14 +57,85 @@ export function TaskDialog({ open, onOpenChange, task, onSave, projectId, campoI
 
   useEffect(() => {
     if (task) {
-      reset(task);
+      console.log('📋 Task recibida para editar:', task);
+      console.log('📋 Campos específicos - fecha_creacion:', (task as any).fecha_creacion, 'fecha_fin:', task.fecha_fin);
+      
+      // Extraer los valores directamente como vienen de la API
+      const taskAny = task as any;
+      
+      // Determinar el nombre/título
+      const nombreValue = taskAny.titulo || task.nombre || "";
+      const descripcionValue = task.descripcion || "";
+      const prioridadValue = task.prioridad || "Media";
+      
+      // Determinar fecha de inicio (puede venir como fecha_creacion o fecha_creacion)
+      const fechaInicioValue = taskAny.fecha_creacion || task.fecha_creacion || taskAny.fecha_creacion;
+      
+      // Determinar fecha fin
+      const fechaFinValue = task.fecha_fin;
+      
+      // Determinar estado (puede venir como estado_nombre o estado)
+      const estadoValue = taskAny.estado_nombre || task.estado || "Pendiente";
+      
+      // Formatear fechas para inputs tipo date (YYYY-MM-DD)
+      const formatearFecha = (fecha: any) => {
+        if (!fecha || fecha === null) {
+          console.log('⚠️ Fecha vacía o null:', fecha);
+          return "";
+        }
+        try {
+          const fechaFormateada = new Date(fecha).toISOString().split('T')[0];
+          console.log(`✅ Fecha formateada: ${fecha} → ${fechaFormateada}`);
+          return fechaFormateada;
+        } catch (e) {
+          console.error('❌ Error formateando fecha:', fecha, e);
+          return "";
+        }
+      };
+      
+      const fechaInicioFormateada = fechaInicioValue ? formatearFecha(fechaInicioValue) : new Date().toISOString().split('T')[0];
+      const fechaFinFormateada = fechaFinValue ? formatearFecha(fechaFinValue) : "";
+      
+      console.log('📝 Valores a setear:', {
+        nombre: nombreValue,
+        descripcion: descripcionValue,
+        estado: estadoValue,
+        prioridad: prioridadValue,
+        fecha_creacion: fechaInicioFormateada,
+        fecha_fin: fechaFinFormateada
+      });
+      
+      const formattedTask = {
+        ...task,
+        nombre: nombreValue,
+        descripcion: descripcionValue,
+        estado: estadoValue,
+        prioridad: prioridadValue,
+        fecha_creacion: fechaInicioFormateada,
+        fecha_fin: fechaFinFormateada,
+      };
+      
+      console.log('📝 Task formateada ANTES de reset:', formattedTask);
+      console.log('📝 fecha_creacion:', formattedTask.fecha_creacion, 'tipo:', typeof formattedTask.fecha_creacion);
+      console.log('📝 fecha_fin:', formattedTask.fecha_fin, 'tipo:', typeof formattedTask.fecha_fin);
+      
+      reset(formattedTask);
+      
+      // Verificar qué valores tiene el formulario después del reset
+      setTimeout(() => {
+        console.log('🔍 Valores del formulario después del reset:', {
+          nombre: watch('nombre'),
+          fecha_creacion: watch('fecha_creacion'),
+          fecha_fin: watch('fecha_fin'),
+        });
+      }, 100);
     } else {
       reset({
         nombre: "",
         descripcion: "",
         estado: "Pendiente",
         prioridad: "Media",
-        fecha_inicio: new Date().toISOString().split('T')[0],
+        fecha_creacion: new Date().toISOString().split('T')[0],
         fecha_fin: "",
         id_proyecto: projectId || 1,
       });
@@ -134,6 +205,7 @@ export function TaskDialog({ open, onOpenChange, task, onSave, projectId, campoI
                 <SelectContent className="bg-popover">
                   <SelectItem value="Pendiente">Pendiente</SelectItem>
                   <SelectItem value="En Progreso">En Progreso</SelectItem>
+                  <SelectItem value="En pausa">En pausa</SelectItem>
                   <SelectItem value="Completada">Completada</SelectItem>
                 </SelectContent>
               </Select>
@@ -157,13 +229,24 @@ export function TaskDialog({ open, onOpenChange, task, onSave, projectId, campoI
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="fecha_fin">Fecha Límite</Label>
-            <Input
-              id="fecha_fin"
-              type="date"
-              {...register("fecha_fin", { required: true })}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="fecha_creacion">Fecha de Inicio</Label>
+              <Input
+                id="fecha_creacion"
+                type="date"
+                {...register("fecha_creacion")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fecha_fin">Fecha Límite</Label>
+              <Input
+                id="fecha_fin"
+                type="date"
+                {...register("fecha_fin", { required: true })}
+              />
+            </div>
           </div>
 
           <DialogFooter>

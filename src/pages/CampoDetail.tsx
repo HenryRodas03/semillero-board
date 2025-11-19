@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { camposService } from "@/services/camposService";
 import { proyectosService } from "@/services/proyectosService";
+import { usuariosService } from "@/services/usuariosService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +34,7 @@ interface Proyecto {
   estado?: number;
   porcentaje_avance?: number;
   url?: string;
-  fecha_inicio?: string;
+  fecha_creacion?: string;
   fecha_fin?: string;
 }
 
@@ -112,6 +113,18 @@ export default function CampoDetail() {
     ruta_foto: ''
   });
 
+  // Crear integrante
+  const [openCrearIntegrante, setOpenCrearIntegrante] = useState(false);
+  const [crearIntegranteSubmitting, setCrearIntegranteSubmitting] = useState(false);
+  const [rolesDisponibles, setRolesDisponibles] = useState<Array<{ id: number; nombre: string }>>([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
+  const [nuevoIntegrante, setNuevoIntegrante] = useState({
+    nombre: '',
+    correo: '',
+    contrasena: '',
+    id_rol: 4 // Por defecto Colaborador
+  });
+
   // Helper para verificar si contacto_redes_sociales tiene contenido
   const hasRedesSociales = (redes: any): boolean => {
     if (!redes) return false;
@@ -132,6 +145,13 @@ export default function CampoDetail() {
       loadCampoDetail();
     }
   }, [id]);
+
+  useEffect(() => {
+    // Cargar roles cuando se abre el modal de crear integrante
+    if (openCrearIntegrante) {
+      loadRolesDisponibles();
+    }
+  }, [openCrearIntegrante]);
 
   const loadCampoDetail = async () => {
     if (!id) return;
@@ -221,6 +241,104 @@ export default function CampoDetail() {
       });
     } finally {
       setCrearProyectoSubmitting(false);
+    }
+  };
+
+  const loadRolesDisponibles = async () => {
+    try {
+      setLoadingRoles(true);
+      const response = await usuariosService.getRolesDisponibles();
+      // Filtrar para excluir "Admin Semillero" (id: 1)
+      const rolesFiltrados = response.roles.filter(rol => rol.id !== 1);
+      setRolesDisponibles(rolesFiltrados);
+    } catch (error: any) {
+      console.error('❌ Error al cargar roles:', error);
+      toast({
+        title: 'Error al cargar roles',
+        description: error.response?.data?.message || 'No se pudieron cargar los roles disponibles',
+        variant: 'destructive'
+      });
+      setRolesDisponibles([]);
+    } finally {
+      setLoadingRoles(false);
+    }
+  };
+
+  const handleCrearIntegrante = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!nuevoIntegrante.nombre.trim()) {
+      toast({ 
+        title: 'Nombre requerido', 
+        description: 'El nombre completo es obligatorio', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    if (!nuevoIntegrante.correo.trim()) {
+      toast({ 
+        title: 'Correo requerido', 
+        description: 'El correo electrónico es obligatorio', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    if (!nuevoIntegrante.contrasena.trim() || nuevoIntegrante.contrasena.length < 6) {
+      toast({ 
+        title: 'Contraseña inválida', 
+        description: 'La contraseña debe tener al menos 6 caracteres', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    if (!id) return;
+
+    try {
+      setCrearIntegranteSubmitting(true);
+      
+      const integranteData = {
+        nombre: nuevoIntegrante.nombre.trim(),
+        correo: nuevoIntegrante.correo.trim(),
+        contrasena: nuevoIntegrante.contrasena,
+        id_rol: nuevoIntegrante.id_rol,
+        id_campo: parseInt(id)
+      };
+
+      console.log('👤 Creando integrante:', integranteData);
+      
+      await usuariosService.crearConCampo(integranteData);
+      
+      // Recargar el campo completo para actualizar integrantes
+      await loadCampoDetail();
+      
+      // Cerrar modal y limpiar formulario
+      setOpenCrearIntegrante(false);
+      setNuevoIntegrante({
+        nombre: '',
+        correo: '',
+        contrasena: '',
+        id_rol: 4
+      });
+      
+      toast({ 
+        title: 'Integrante creado', 
+        description: 'El integrante se ha agregado correctamente al campo' 
+      });
+    } catch (error: any) {
+      console.error('❌ Error al crear integrante:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          'No se pudo crear el integrante';
+      toast({ 
+        title: 'Error al crear integrante', 
+        description: errorMessage, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setCrearIntegranteSubmitting(false);
     }
   };
 
@@ -448,10 +566,24 @@ export default function CampoDetail() {
       {/* Integrantes */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Integrantes ({campo.integrantes.length})
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Integrantes ({campo.integrantes.length})
+            </CardTitle>
+            {/* Botón crear integrante - Solo visible para Admin Semillero (1) o Líder Campo (2) */}
+            {(user?.id_rol === 1 || user?.id_rol === 2) && (
+              <Button 
+                size="sm" 
+                onClick={() => setOpenCrearIntegrante(true)}
+                className="shrink-0 text-white"
+                style={{ backgroundColor: '#008042' }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Agregar Integrante
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {campo.integrantes.length === 0 ? (
@@ -592,6 +724,130 @@ export default function CampoDetail() {
               </Button>
               <Button type="submit" disabled={crearProyectoSubmitting}>
                 {crearProyectoSubmitting ? 'Creando...' : 'Crear Proyecto'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Crear Integrante */}
+      <Dialog open={openCrearIntegrante} onOpenChange={setOpenCrearIntegrante}>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Agregar Nuevo Integrante</DialogTitle>
+            <DialogDescription>
+              Crea un nuevo usuario y agrégalo automáticamente a este campo de investigación.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCrearIntegrante} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="integrante-nombre">
+                Nombre Completo *
+              </Label>
+              <Input 
+                id="integrante-nombre"
+                value={nuevoIntegrante.nombre} 
+                onChange={(e) => setNuevoIntegrante(prev => ({ ...prev, nombre: e.target.value }))} 
+                placeholder="Ej: Juan Pérez García"
+                required 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="integrante-correo">
+                Correo Electrónico *
+              </Label>
+              <Input 
+                id="integrante-correo"
+                type="email"
+                value={nuevoIntegrante.correo} 
+                onChange={(e) => setNuevoIntegrante(prev => ({ ...prev, correo: e.target.value }))} 
+                placeholder="ejemplo@ucp.edu.co"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Este correo será usado para iniciar sesión
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="integrante-contrasena">
+                Contraseña *
+              </Label>
+              <Input 
+                id="integrante-contrasena"
+                type="password"
+                value={nuevoIntegrante.contrasena} 
+                onChange={(e) => setNuevoIntegrante(prev => ({ ...prev, contrasena: e.target.value }))} 
+                placeholder="Mínimo 6 caracteres"
+                minLength={6}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                La contraseña debe tener al menos 6 caracteres
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="integrante-rol">
+                Rol en el Campo *
+              </Label>
+              {loadingRoles ? (
+                <div className="flex items-center justify-center py-3 border rounded-md">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="text-sm text-muted-foreground">Cargando roles...</span>
+                </div>
+              ) : (
+                <select
+                  id="integrante-rol"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={nuevoIntegrante.id_rol}
+                  onChange={(e) => setNuevoIntegrante(prev => ({ ...prev, id_rol: Number(e.target.value) }))}
+                  required
+                >
+                  {rolesDisponibles.map((rol) => (
+                    <option key={rol.id} value={rol.id}>
+                      {rol.nombre}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Define los permisos del integrante en este campo
+              </p>
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                type="button" 
+                onClick={() => {
+                  setOpenCrearIntegrante(false);
+                  setNuevoIntegrante({
+                    nombre: '',
+                    correo: '',
+                    contrasena: '',
+                    id_rol: 4
+                  });
+                }}
+                disabled={crearIntegranteSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={crearIntegranteSubmitting || loadingRoles}
+                style={{ backgroundColor: '#008042' }}
+                className="text-white"
+              >
+                {crearIntegranteSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  'Crear Integrante'
+                )}
               </Button>
             </DialogFooter>
           </form>

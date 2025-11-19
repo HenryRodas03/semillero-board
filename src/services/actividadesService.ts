@@ -58,7 +58,7 @@ export const actividadesService = {
     id_estado?: number;
     prioridad?: string;
     id_integrante?: number;
-    fecha_inicio?: string;
+    fecha_creacion?: string;
     fecha_fin?: string;
   }) => {
     console.log('➕ Creando nueva actividad:', data);
@@ -77,7 +77,7 @@ export const actividadesService = {
     id_estado?: number;
     prioridad?: string;
     id_integrante?: number;
-    fecha_inicio?: string;
+    fecha_creacion?: string;
     fecha_fin?: string;
   }) => {
     console.log(`✏️ Actualizando actividad ${id}:`, data);

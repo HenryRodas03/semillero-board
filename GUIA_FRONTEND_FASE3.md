@@ -471,7 +471,7 @@ const getProyectos = async () => {
     "nombre": "Sistema de Gestión",
     "descripcion": "Plataforma web...",
     "ruta_imagen": "https://...",
-    "fecha_inicio": "2024-01-15",
+    "fecha_creacion": "2024-01-15",
     "fecha_fin": "2024-12-15",
     "estado": "En Progreso",
     "porcentaje_completado": 65,
@@ -505,7 +505,7 @@ const createProyecto = async (data) => {
       nombre: data.nombre,
       descripcion: data.descripcion,
       ruta_imagen: data.ruta_imagen,
-      fecha_inicio: data.fecha_inicio, // Formato: YYYY-MM-DD
+      fecha_creacion: data.fecha_creacion, // Formato: YYYY-MM-DD
       fecha_fin: data.fecha_fin, // Formato: YYYY-MM-DD
       estado: data.estado || 'Planificación',
       porcentaje_completado: data.porcentaje_completado || 0,
@@ -523,7 +523,7 @@ const createProyecto = async (data) => {
   "nombre": "Sistema de Gestión de Proyectos",
   "descripcion": "Plataforma web para gestionar proyectos de investigación",
   "ruta_imagen": "https://res.cloudinary.com/.../proyecto.jpg",
-  "fecha_inicio": "2024-01-15",
+  "fecha_creacion": "2024-01-15",
   "fecha_fin": "2024-12-15",
   "estado": "Planificación",
   "porcentaje_completado": 0,
@@ -587,7 +587,7 @@ const getActividadesProyecto = async (id) => {
     "id": 1,
     "nombre": "Diseño de base de datos",
     "descripcion": "Crear el diagrama ER...",
-    "fecha_inicio": "2024-01-20",
+    "fecha_creacion": "2024-01-20",
     "fecha_fin": "2024-02-01",
     "estado": "Completada",
     "prioridad": "Alta",
@@ -715,7 +715,7 @@ const createActividad = async (data) => {
     const response = await api.post('/actividades', {
       nombre: data.nombre,
       descripcion: data.descripcion,
-      fecha_inicio: data.fecha_inicio, // YYYY-MM-DD
+      fecha_creacion: data.fecha_creacion, // YYYY-MM-DD
       fecha_fin: data.fecha_fin, // YYYY-MM-DD
       estado: data.estado || 'Pendiente',
       prioridad: data.prioridad || 'Media', // Baja, Media, Alta
@@ -733,7 +733,7 @@ const createActividad = async (data) => {
 {
   "nombre": "Diseño de base de datos",
   "descripcion": "Crear el diagrama ER y el script SQL",
-  "fecha_inicio": "2024-01-20",
+  "fecha_creacion": "2024-01-20",
   "fecha_fin": "2024-02-01",
   "estado": "Pendiente",
   "prioridad": "Alta",

@@ -42,7 +42,7 @@ export function EventosCalendar({
 
   const getEventosDelDia = (date: Date) => {
     return eventos.filter((evento) =>
-      isSameDay(new Date(evento.fecha_inicio), date)
+      isSameDay(new Date(evento.fecha_creacion), date)
     );
   };
 
@@ -189,7 +189,7 @@ export function EventosCalendar({
                     {evento.titulo}
                   </div>
                   <div className="text-xs text-muted-foreground mb-2">
-                    {format(new Date(evento.fecha_inicio), "HH:mm")} - 
+                    {format(new Date(evento.fecha_creacion), "HH:mm")} - 
                     {format(new Date(evento.fecha_fin), "HH:mm")}
                   </div>
                   <Badge className="text-xs" variant="secondary">

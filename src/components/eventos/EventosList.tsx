@@ -61,7 +61,7 @@ export function EventosList({ eventos, onEdit, onDelete }: EventosListProps) {
 
   // Agrupar eventos por mes
   const eventosPorMes = eventos.reduce((acc, evento) => {
-    const mesKey = format(new Date(evento.fecha_inicio), "MMMM yyyy", { locale: es });
+    const mesKey = format(new Date(evento.fecha_creacion), "MMMM yyyy", { locale: es });
     if (!acc[mesKey]) {
       acc[mesKey] = [];
     }
@@ -129,14 +129,14 @@ export function EventosList({ eventos, onEdit, onDelete }: EventosListProps) {
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {format(new Date(evento.fecha_inicio), "dd MMM yyyy", { locale: es })}
+                        {format(new Date(evento.fecha_creacion), "dd MMM yyyy", { locale: es })}
                       </span>
                     </div>
                     
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="h-4 w-4" />
                       <span>
-                        {format(new Date(evento.fecha_inicio), "HH:mm", { locale: es })} - 
+                        {format(new Date(evento.fecha_creacion), "HH:mm", { locale: es })} - 
                         {format(new Date(evento.fecha_fin), "HH:mm", { locale: es })}
                       </span>
                     </div>

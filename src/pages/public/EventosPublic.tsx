@@ -78,12 +78,12 @@ export default function EventosPublic() {
 
   // Separar eventos
   const eventosProximos = eventosFiltrados
-    .filter(e => (isFuture(new Date(e.fecha_inicio)) || isToday(new Date(e.fecha_inicio))) && e.estado === 'Programado')
-    .sort((a, b) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime());
+    .filter(e => (isFuture(new Date(e.fecha_creacion)) || isToday(new Date(e.fecha_creacion))) && e.estado === 'Programado')
+    .sort((a, b) => new Date(a.fecha_creacion).getTime() - new Date(b.fecha_creacion).getTime());
 
   const eventosEnCurso = eventosFiltrados
     .filter(e => e.estado === 'En Curso')
-    .sort((a, b) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime());
+    .sort((a, b) => new Date(a.fecha_creacion).getTime() - new Date(b.fecha_creacion).getTime());
 
   const eventosFinalizados = eventosFiltrados
     .filter(e => e.estado === 'Finalizado')
@@ -117,14 +117,14 @@ export default function EventosPublic() {
           <div className="flex items-center gap-3 text-sm">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span className="font-medium">
-              {format(new Date(evento.fecha_inicio), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es })}
+              {format(new Date(evento.fecha_creacion), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es })}
             </span>
           </div>
           
           <div className="flex items-center gap-3 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span>
-              {format(new Date(evento.fecha_inicio), "HH:mm", { locale: es })} - 
+              {format(new Date(evento.fecha_creacion), "HH:mm", { locale: es })} - 
               {format(new Date(evento.fecha_fin), "HH:mm", { locale: es })}
             </span>
           </div>
