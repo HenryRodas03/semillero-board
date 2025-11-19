@@ -2,105 +2,70 @@ import api from './api';
 
 export interface Publicacion {
   id: number;
+  id_campo: number;
+  id_usuario?: number;
   titulo: string;
   descripcion?: string;
-  tipo: 'Artículo' | 'Paper' | 'Poster' | 'Libro' | 'Capítulo' | 'Tesis' | 'Otro';
-  autores: string;
-  fecha_publicacion: string;
-  editorial?: string;
-  doi?: string;
-  url?: string;
-  archivo?: string;
-  imagen?: string;
-  id_campo: number;
-  es_publico: boolean;
-  orden: number;
-  campo?: {
-    id: number;
-    nombre: string;
-    imagen?: string;
-  };
-  created_at?: string;
-  updated_at?: string;
+  tipo?: string;
+  imagen_1?: string | null;
+  imagen_2?: string | null;
+  imagen_3?: string | null;
+  fecha_publicacion?: string;
+  fecha_actualizacion?: string;
+  activo?: number;
+  campo_nombre?: string;
+  autor_nombre?: string;
 }
 
-export interface CreatePublicacionDto {
-  titulo: string;
-  descripcion?: string;
-  tipo: Publicacion['tipo'];
-  autores: string;
-  fecha_publicacion: string;
-  editorial?: string;
-  doi?: string;
-  url?: string;
-  archivo?: string;
-  imagen?: string;
-  id_campo: number;
-  es_publico?: boolean;
-  orden?: number;
-}
-
-export const publicacionesService = {
-  // Obtener todas las publicaciones (admin)
-  async getAll(params?: { id_campo?: number; es_publico?: boolean; tipo?: string; desde?: string; hasta?: string }): Promise<Publicacion[]> {
-    const queryParams = new URLSearchParams();
-    if (params?.id_campo) queryParams.append('id_campo', params.id_campo.toString());
-    if (params?.es_publico !== undefined) queryParams.append('es_publico', params.es_publico.toString());
-    if (params?.tipo) queryParams.append('tipo', params.tipo);
-    if (params?.desde) queryParams.append('desde', params.desde);
-    if (params?.hasta) queryParams.append('hasta', params.hasta);
-
-    const response = await api.get(`/publicaciones?${queryParams.toString()}`);
-    return response.data || [];
+const publicacionesService = {
+  async getAll() {
+    const res = await api.get('/publicaciones');
+    return res.data.publicaciones || res.data;
   },
 
-  // Obtener publicaciones públicas
-  async getPublicas(params?: { id_campo?: number; tipo?: string; desde?: string; hasta?: string }): Promise<Publicacion[]> {
-    const queryParams = new URLSearchParams();
-    if (params?.id_campo) queryParams.append('id_campo', params.id_campo.toString());
-    if (params?.tipo) queryParams.append('tipo', params.tipo);
-    if (params?.desde) queryParams.append('desde', params.desde);
-    if (params?.hasta) queryParams.append('hasta', params.hasta);
-
-    const response = await api.get(`/publicaciones/publicas?${queryParams.toString()}`);
-    return response.data || [];
+  async getByCampo(idCampo: number) {
+    const res = await api.get(`/publicaciones/campo/${idCampo}`);
+    return res.data.publicaciones || res.data;
   },
 
-  // Obtener una publicación por ID
-  async getById(id: number): Promise<Publicacion> {
-    const response = await api.get(`/publicaciones/${id}`);
-    return response.data;
+  async getById(id: number) {
+    const res = await api.get(`/publicaciones/${id}`);
+    return res.data || res.data.publicacion || null;
   },
 
-  // Obtener una publicación pública por ID
-  async getPublicaById(id: number): Promise<Publicacion> {
-    const response = await api.get(`/publicaciones/${id}/publica`);
-    return response.data;
+  async getMine() {
+    const res = await api.get('/publicaciones/mis-publicaciones');
+    return res.data.publicaciones || res.data;
   },
 
-  // Crear una publicación
-  async create(data: CreatePublicacionDto): Promise<Publicacion> {
-    const response = await api.post('/publicaciones', data);
-    return response.data;
+  // create/update expect FormData (multipart)
+  async create(formData: FormData) {
+    // Do NOT set Content-Type manually for FormData; let the browser set the boundary
+    const res = await api.post('/publicaciones', formData);
+    return res.data;
   },
 
-  // Actualizar una publicación
-  async update(id: number, data: Partial<CreatePublicacionDto>): Promise<Publicacion> {
-    const response = await api.put(`/publicaciones/${id}`, data);
-    return response.data;
+  async update(id: number, formData: FormData) {
+    // Do NOT set Content-Type manually for FormData; let the browser set the boundary
+    const res = await api.put(`/publicaciones/${id}`, formData);
+    return res.data;
   },
 
-  // Eliminar una publicación
-  async delete(id: number): Promise<void> {
-    await api.delete(`/publicaciones/${id}`);
+  async deleteImagen(id: number, imagen: string) {
+    const res = await api.delete(`/publicaciones/${id}/imagen`, { data: { imagen } });
+    return res.data;
   },
 
-  // Obtener publicaciones por campo de investigación
-  async getByCampo(id_campo: number, esPublico?: boolean): Promise<Publicacion[]> {
-    const url = esPublico 
-      ? `/publicaciones/campo/${id_campo}/publicas`
-      : `/publicaciones/campo/${id_campo}`;
-    const response = await api.get(url);
-    return response.data || [];
+  async delete(id: number) {
+    const res = await api.delete(`/publicaciones/${id}`);
+    return res.data;
+  },
+
+  async toggleEstado(id: number, activo?: boolean) {
+    const res = await api.patch(`/publicaciones/${id}/estado`, { activo });
+    return res.data;
   }
 };
+
+export default publicacionesService;
+
