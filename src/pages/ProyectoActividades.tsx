@@ -54,6 +54,7 @@ interface Actividad {
   prioridad: string;
   fecha_creacion: string;
   fecha_actualizacion: string;
+  fecha_fin?: string | null; // Fecha de finalización de la actividad
   integrante?: Integrante;
   responsable_id?: number; // ID del usuario responsable
 }
@@ -98,7 +99,7 @@ export default function ProyectoActividades() {
     prioridad: 'Media',
     id_estado: 1,
     id_integrante: undefined as number | undefined,
-    fecha_inicio: '',
+    fecha_creacion: '',
     fecha_fin: ''
   });
 
@@ -397,7 +398,7 @@ export default function ProyectoActividades() {
         id_estado: formData.id_estado,
         prioridad: formData.prioridad,
         ...(formData.id_integrante && { id_integrante: formData.id_integrante }),
-        ...(formData.fecha_inicio && { fecha_inicio: formData.fecha_inicio }),
+        ...(formData.fecha_creacion && { fecha_creacion: formData.fecha_creacion }),
         ...(formData.fecha_fin && { fecha_fin: formData.fecha_fin }),
       };
 
@@ -414,7 +415,7 @@ export default function ProyectoActividades() {
         prioridad: 'Media',
         id_estado: 1,
         id_integrante: undefined,
-        fecha_inicio: '',
+        fecha_creacion: '',
         fecha_fin: ''
       });
       
@@ -441,8 +442,24 @@ export default function ProyectoActividades() {
   const handleEditarActividad = (actividad: Actividad) => {
     console.log('📝 Editando actividad:', actividad);
     console.log('👤 Integrante actual:', actividad.integrante);
+    console.log('📅 fecha_creacion:', actividad.fecha_creacion);
+    console.log('📅 fecha_fin:', actividad.fecha_fin);
     
     setActividadToEdit(actividad);
+    
+    // Formatear fechas al formato YYYY-MM-DD para inputs tipo date
+    const formatearFecha = (fecha: string | null | undefined): string => {
+      if (!fecha) return '';
+      try {
+        // Convertir "2025-11-17 03:18:56" a "2025-11-17"
+        const fechaFormateada = fecha.split(' ')[0];
+        console.log(`✅ Fecha formateada: ${fecha} → ${fechaFormateada}`);
+        return fechaFormateada;
+      } catch (e) {
+        console.error('❌ Error formateando fecha:', fecha, e);
+        return '';
+      }
+    };
     
     // Pre-cargar el formulario con los datos básicos
     // El integrante lo buscaremos después de que se carguen
@@ -452,8 +469,13 @@ export default function ProyectoActividades() {
       prioridad: actividad.prioridad || 'Media',
       id_estado: actividad.id_estado,
       id_integrante: undefined, // Lo estableceremos en el useEffect
-      fecha_inicio: '',
-      fecha_fin: ''
+      fecha_creacion: formatearFecha(actividad.fecha_creacion),
+      fecha_fin: formatearFecha(actividad.fecha_fin) // Usar fecha_fin, no fecha_actualizacion
+    });
+    
+    console.log('📝 FormData inicial:', {
+      fecha_creacion: formatearFecha(actividad.fecha_creacion),
+      fecha_fin: formatearFecha(actividad.fecha_fin)
     });
     
     setIsEditDialogOpen(true);
@@ -491,7 +513,7 @@ export default function ProyectoActividades() {
         id_estado: formData.id_estado,
         prioridad: formData.prioridad,
         ...(formData.id_integrante && { id_integrante: formData.id_integrante }),
-        ...(formData.fecha_inicio && { fecha_inicio: formData.fecha_inicio }),
+        ...(formData.fecha_creacion && { fecha_creacion: formData.fecha_creacion }),
         ...(formData.fecha_fin && { fecha_fin: formData.fecha_fin }),
       };
 
@@ -509,7 +531,7 @@ export default function ProyectoActividades() {
         prioridad: 'Media',
         id_estado: 1,
         id_integrante: undefined,
-        fecha_inicio: '',
+        fecha_creacion: '',
         fecha_fin: ''
       });
       
@@ -1074,12 +1096,12 @@ export default function ProyectoActividades() {
             {/* Fechas */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="fecha_inicio">Fecha de Inicio</Label>
+                <Label htmlFor="fecha_creacion">Fecha de Inicio</Label>
                 <Input
-                  id="fecha_inicio"
+                  id="fecha_creacion"
                   type="date"
-                  value={formData.fecha_inicio}
-                  onChange={(e) => setFormData({ ...formData, fecha_inicio: e.target.value })}
+                  value={formData.fecha_creacion}
+                  onChange={(e) => setFormData({ ...formData, fecha_creacion: e.target.value })}
                 />
               </div>
 
@@ -1098,7 +1120,7 @@ export default function ProyectoActividades() {
             <div className="flex justify-end gap-3 pt-4">
               <Button
                 type="button"
-                variant="outline"
+                className="bg-[#ffd429] hover:bg-[#ffcc00] text-black"
                 onClick={() => setIsDialogOpen(false)}
                 disabled={isCreating}
               >
@@ -1106,7 +1128,7 @@ export default function ProyectoActividades() {
               </Button>
               <Button
                 type="submit"
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-[#008042] hover:bg-[#025d31] text-black"
                 disabled={isCreating}
               >
                 {isCreating ? (
@@ -1239,12 +1261,12 @@ export default function ProyectoActividades() {
             {/* Fechas */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-fecha_inicio">Fecha de Inicio (opcional)</Label>
+                <Label htmlFor="edit-fecha_creacion">Fecha de Inicio (opcional)</Label>
                 <Input
-                  id="edit-fecha_inicio"
+                  id="edit-fecha_creacion"
                   type="date"
-                  value={formData.fecha_inicio}
-                  onChange={(e) => setFormData({ ...formData, fecha_inicio: e.target.value })}
+                  value={formData.fecha_creacion}
+                  onChange={(e) => setFormData({ ...formData, fecha_creacion: e.target.value })}
                 />
               </div>
 
@@ -1255,7 +1277,7 @@ export default function ProyectoActividades() {
                   type="date"
                   value={formData.fecha_fin}
                   onChange={(e) => setFormData({ ...formData, fecha_fin: e.target.value })}
-                  min={formData.fecha_inicio}
+                  min={formData.fecha_creacion}
                 />
               </div>
             </div>
@@ -1264,7 +1286,7 @@ export default function ProyectoActividades() {
             <div className="flex justify-end gap-3 pt-4">
               <Button
                 type="button"
-                variant="outline"
+                className="bg-[#ffd429] hover:bg-[#ffcc00] text-black"
                 onClick={() => {
                   setIsEditDialogOpen(false);
                   setActividadToEdit(null);
@@ -1275,7 +1297,7 @@ export default function ProyectoActividades() {
               </Button>
               <Button
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-[#008042] hover:bg-[#025d31] text-black"
                 disabled={isEditing}
               >
                 {isEditing ? (

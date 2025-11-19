@@ -22,7 +22,7 @@ Body:
   "id_estado": 1,
   "prioridad": "Alta",
   "id_integrante": 5,           // Opcional
-  "fecha_inicio": "2024-11-16",  // Opcional
+  "fecha_creacion": "2024-11-16",  // Opcional
   "fecha_fin": "2024-11-20"      // Opcional
 }
 ```
@@ -39,7 +39,7 @@ Body:
     "descripcion": "Crear el modelo entidad-relación del sistema",
     "id_estado": 1,
     "prioridad": "Alta",
-    "fecha_inicio": "2024-11-16",
+    "fecha_creacion": "2024-11-16",
     "fecha_fin": "2024-11-20",
     "fecha_creacion": "2024-11-16T10:30:00.000Z"
   }
@@ -66,7 +66,7 @@ crearActividad: async (data: {
   id_estado?: number;
   prioridad?: string;
   id_integrante?: number;
-  fecha_inicio?: string;
+  fecha_creacion?: string;
   fecha_fin?: string;
 }) => {
   console.log('➕ Creando nueva actividad:', data);
@@ -115,7 +115,7 @@ const [formData, setFormData] = useState({
   prioridad: 'Media',
   id_estado: 1,
   id_integrante: undefined as number | undefined,
-  fecha_inicio: '',
+  fecha_creacion: '',
   fecha_fin: ''
 });
 ```
@@ -149,7 +149,7 @@ const handleCrearActividad = async (e: React.FormEvent) => {
       id_estado: formData.id_estado,
       prioridad: formData.prioridad,
       ...(formData.id_integrante && { id_integrante: formData.id_integrante }),
-      ...(formData.fecha_inicio && { fecha_inicio: formData.fecha_inicio }),
+      ...(formData.fecha_creacion && { fecha_creacion: formData.fecha_creacion }),
       ...(formData.fecha_fin && { fecha_fin: formData.fecha_fin }),
     };
 
@@ -166,7 +166,7 @@ const handleCrearActividad = async (e: React.FormEvent) => {
       prioridad: 'Media',
       id_estado: 1,
       id_integrante: undefined,
-      fecha_inicio: '',
+      fecha_creacion: '',
       fecha_fin: ''
     });
     
@@ -363,7 +363,7 @@ const payload = {
   
   // Campos opcionales solo si tienen valor
   ...(formData.id_integrante && { id_integrante: formData.id_integrante }),
-  ...(formData.fecha_inicio && { fecha_inicio: formData.fecha_inicio }),
+  ...(formData.fecha_creacion && { fecha_creacion: formData.fecha_creacion }),
   ...(formData.fecha_fin && { fecha_fin: formData.fecha_fin }),
 };
 ```
@@ -394,7 +394,7 @@ Muestra el mensaje exacto del backend si está disponible.
 ## 🔮 Posibles Mejoras Futuras
 
 - [ ] Autocompletar ID integrante con dropdown de integrantes del proyecto
-- [ ] Validación de fecha_fin > fecha_inicio
+- [ ] Validación de fecha_fin > fecha_creacion
 - [ ] Agregar campo de tags o etiquetas
 - [ ] Subir archivos adjuntos
 - [ ] Asignar múltiples integrantes

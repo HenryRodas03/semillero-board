@@ -41,7 +41,7 @@ export function EventoDialog({
       titulo: "",
       descripcion: "",
       tipo: "Reunión",
-      fecha_inicio: "",
+      fecha_creacion: "",
       fecha_fin: "",
       ubicacion: "",
       enlace_virtual: "",
@@ -58,7 +58,7 @@ export function EventoDialog({
     if (evento) {
       reset({
         ...evento,
-        fecha_inicio: evento.fecha_inicio ? new Date(evento.fecha_inicio).toISOString().slice(0, 16) : "",
+        fecha_creacion: evento.fecha_creacion ? new Date(evento.fecha_creacion).toISOString().slice(0, 16) : "",
         fecha_fin: evento.fecha_fin ? new Date(evento.fecha_fin).toISOString().slice(0, 16) : "",
       });
     } else {
@@ -66,7 +66,7 @@ export function EventoDialog({
         titulo: "",
         descripcion: "",
         tipo: "Reunión",
-        fecha_inicio: "",
+        fecha_creacion: "",
         fecha_fin: "",
         ubicacion: "",
         enlace_virtual: "",
@@ -153,11 +153,11 @@ export function EventoDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="fecha_inicio">Fecha y Hora de Inicio *</Label>
+              <Label htmlFor="fecha_creacion">Fecha y Hora de Inicio *</Label>
               <Input
-                id="fecha_inicio"
+                id="fecha_creacion"
                 type="datetime-local"
-                {...register("fecha_inicio", { required: true })}
+                {...register("fecha_creacion", { required: true })}
               />
             </div>
 

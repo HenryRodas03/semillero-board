@@ -20,13 +20,20 @@ import { useEffect, useState } from "react";
 
 export interface Task {
   id: number;
+  titulo?: string; // La API usa 'titulo'
   nombre: string;
   descripcion: string;
-  estado: "Pendiente" | "En Progreso" | "Completada";
+  estado: "Pendiente" | "En Progreso" | "Completada" | "En pausa";
+  estado_nombre?: string; // La API devuelve esto
   prioridad: "Baja" | "Media" | "Alta";
-  fecha_inicio: string;
-  fecha_fin: string;
+  fecha_creacion: string;
+  fecha_fin: string | null;
+  fecha_actualizacion?: string;
   id_proyecto: number;
+  id_integrante?: number;
+  responsable_id?: number | null;
+  responsable_nombre?: string | null;
+  responsable_correo?: string | null;
   proyecto?: {
     id: number;
     nombre: string;
@@ -194,6 +201,7 @@ export default function Tasks() {
       });
       return;
     }
+    
     setEditingTask(task);
     setDialogOpen(true);
   };

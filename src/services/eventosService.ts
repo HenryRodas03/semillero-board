@@ -5,7 +5,7 @@ export interface Evento {
   titulo: string;
   descripcion?: string;
   tipo: 'Reunión' | 'Taller' | 'Presentación' | 'Conferencia' | 'Otro';
-  fecha_inicio: string;
+  fecha_creacion: string;
   fecha_fin: string;
   ubicacion?: string;
   enlace_virtual?: string;
@@ -31,7 +31,7 @@ export interface CreateEventoDto {
   titulo: string;
   descripcion?: string;
   tipo: Evento['tipo'];
-  fecha_inicio: string;
+  fecha_creacion: string;
   fecha_fin: string;
   ubicacion?: string;
   enlace_virtual?: string;

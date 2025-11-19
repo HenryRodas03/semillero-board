@@ -41,6 +41,11 @@ export function TaskCard({ task, onMove, onEdit, onDelete }: TaskCardProps) {
     e.dataTransfer.setData("estado", task.estado);
     e.dataTransfer.effectAllowed = "move";
   };
+  
+  const handleEdit = () => {
+    console.log('🎯 TaskCard - Task al hacer clic en editar:', task);
+    onEdit(task);
+  };
 
   return (
     <Card 
@@ -58,7 +63,7 @@ export function TaskCard({ task, onMove, onEdit, onDelete }: TaskCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-popover">
-              <DropdownMenuItem onClick={() => onEdit(task)}>
+              <DropdownMenuItem onClick={handleEdit}>
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>

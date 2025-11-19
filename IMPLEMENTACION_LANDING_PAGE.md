@@ -359,7 +359,7 @@ interface Proyecto {
   imagen?: string;
   estado: number; // 1 = En progreso, 2 = En pausa, 3 = Finalizados
   porcentaje_avance: number; // 0-100
-  fecha_inicio?: string;
+  fecha_creacion?: string;
   fecha_fin?: string;
   url?: string; // GitHub URL
   campo: {

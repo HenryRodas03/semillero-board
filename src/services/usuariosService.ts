@@ -135,5 +135,23 @@ export const usuariosService = {
   async updateProfile(data: Partial<UpdateUsuarioDto>): Promise<Usuario> {
     const response = await api.put('/usuarios/perfil', data);
     return response.data;
+  },
+
+  // Obtener roles disponibles para asignación
+  async getRolesDisponibles(): Promise<{ roles: Array<{ id: number; nombre: string }>; total: number }> {
+    const response = await api.get('/usuarios/roles-disponibles');
+    return response.data;
+  },
+
+  // Crear usuario con campo asignado
+  async crearConCampo(data: {
+    nombre: string;
+    correo: string;
+    contrasena: string;
+    id_rol: number;
+    id_campo: number;
+  }): Promise<any> {
+    const response = await api.post('/usuarios/crear-con-campo', data);
+    return response.data;
   }
 };

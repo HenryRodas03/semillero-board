@@ -16,7 +16,7 @@ export interface Proyecto {
   descripcion?: string;
   estado?: string;
   id_campo?: number;
-  fecha_inicio?: string;
+  fecha_creacion?: string;
   fecha_fin?: string;
   progreso?: number;
 }

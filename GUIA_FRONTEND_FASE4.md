@@ -967,7 +967,7 @@ const ProyectoCard = ({ proyecto }) => {
           <span className={`badge badge-${proyecto.estado.toLowerCase().replace(' ', '-')}`}>
             {proyecto.estado}
           </span>
-          <span>Inicio: {new Date(proyecto.fecha_inicio).toLocaleDateString()}</span>
+          <span>Inicio: {new Date(proyecto.fecha_creacion).toLocaleDateString()}</span>
           <span>Fin: {new Date(proyecto.fecha_fin).toLocaleDateString()}</span>
         </div>
         <ProgressBar porcentaje={proyecto.porcentaje_completado} />

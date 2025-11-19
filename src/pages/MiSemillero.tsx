@@ -728,14 +728,6 @@ export default function MiSemillero() {
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2 mt-4">
-                      <Button size="sm" variant="outline" onClick={() => openAgregarIntegranteExistente(campo.id)}>
-                        Agregar existente
-                      </Button>
-                      <Button size="sm" onClick={() => handleCrearUsuarioYAgregar(campo.id)}>
-                        Crear usuario y agregar
-                      </Button>
-                    </div>
                   </CardContent>
                 </Card>
               ))}
