@@ -135,6 +135,29 @@ export default function Publicaciones() {
         </div>
       </div>
 
+      {/* Lista de campos del semillero (chips) */}
+      <div>
+        <h2 className="text-lg font-medium">Campos del Semillero</h2>
+        {camposList.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No hay campos disponibles para tu semillero.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {camposList.map((c) => (
+              <button
+                key={c.id}
+                onClick={async () => {
+                  setCampoId(c.id);
+                  setDialogSelectedCampoId(c.id);
+                  await loadByCampo(c.id);
+                }}
+                className={`px-3 py-1 rounded-full border transition-colors text-sm ${campoId === c.id ? 'bg-primary text-white border-primary' : 'bg-white text-foreground hover:bg-gray-100'}`}>
+                {c.nombre || c.name || `Campo ${c.id}`}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {publicaciones.map((p) => (
           <PublicacionCard key={p.id} publicacion={p} onEdit={handleEdit} onDelete={async (id) => {
