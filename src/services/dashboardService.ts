@@ -1,15 +1,48 @@
 import api from './api';
 
+// Interfaces para la respuesta del dashboard
 export interface DashboardStats {
-  totalProyectos?: number;
-  totalActividades?: number;
-  totalIntegrantes?: number;
-  actividadesPendientes?: number;
-  actividadesEnProgreso?: number;
-  actividadesCompletadas?: number;
-  proyectosActivos?: number;
+  proyectos_activos: number;
+  tareas_completadas: number;
+  tareas_pendientes: number;
+  progreso_general: number;
 }
 
+export interface Campo {
+  id: number;
+  nombre: string;
+}
+
+export interface Semillero {
+  id: number;
+  nombre: string;
+}
+
+export interface ProyectoReciente {
+  id: number;
+  titulo: string;
+  estado: string;
+  porcentaje_avance: string;
+  campo?: Campo;
+  fecha_actualizacion: string;
+  total_actividades?: number;
+  actividades_completadas?: number;
+  mis_actividades?: {
+    total: number;
+    completadas: number;
+    pendientes: number;
+  };
+}
+
+export interface DashboardResponse {
+  rol: string;
+  semillero?: Semillero;
+  campo?: Campo;
+  estadisticas: DashboardStats;
+  proyectos_recientes: ProyectoReciente[];
+}
+
+// Interfaces legacy (mantener por compatibilidad)
 export interface Proyecto {
   id: number;
   nombre: string;
@@ -23,7 +56,23 @@ export interface Proyecto {
 
 export const dashboardService = {
   /**
-   * Obtener todos los proyectos
+   * Obtener datos del dashboard según el rol del usuario
+   * GET /api/dashboard
+   */
+  getDashboard: async (): Promise<DashboardResponse> => {
+    try {
+      console.log('📊 Obteniendo datos del dashboard...');
+      const response = await api.get('/dashboard');
+      console.log('✅ Dashboard obtenido:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Error al obtener dashboard:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener todos los proyectos (legacy)
    * GET /api/projects
    */
   getProyectos: async (): Promise<Proyecto[]> => {
@@ -44,7 +93,7 @@ export const dashboardService = {
   },
 
   /**
-   * Obtener estadísticas generales del dashboard
+   * Obtener estadísticas generales del dashboard (legacy)
    * Puedes agregar este endpoint en tu backend si lo necesitas
    */
   getEstadisticas: async (): Promise<DashboardStats> => {
@@ -55,8 +104,13 @@ export const dashboardService = {
       return response.data;
     } catch (error: any) {
       console.error('❌ Error al obtener estadísticas:', error);
-      // Si el endpoint no existe, devolver un objeto vacío
-      return {};
+      // Si el endpoint no existe, devolver un objeto con valores por defecto
+      return {
+        proyectos_activos: 0,
+        tareas_completadas: 0,
+        tareas_pendientes: 0,
+        progreso_general: 0
+      };
     }
   },
 
