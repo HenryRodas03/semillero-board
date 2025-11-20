@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const publicApi = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://gestionproyectos-8cuz.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
