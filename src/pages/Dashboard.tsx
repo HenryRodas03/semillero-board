@@ -1,51 +1,113 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FolderKanban, CheckSquare, Clock, TrendingUp } from "lucide-react";
-
-const stats = [
-  {
-    title: "Proyectos Activos",
-    value: "12",
-    change: "+2 este mes",
-    icon: FolderKanban,
-    color: "text-primary",
-  },
-  {
-    title: "Tareas Completadas",
-    value: "48",
-    change: "+12 esta semana",
-    icon: CheckSquare,
-    color: "text-light-green",
-  },
-  {
-    title: "Tareas Pendientes",
-    value: "23",
-    change: "5 vencen pronto",
-    icon: Clock,
-    color: "text-accent",
-  },
-  {
-    title: "Progreso General",
-    value: "67%",
-    change: "+8% vs mes anterior",
-    icon: TrendingUp,
-    color: "text-blue",
-  },
-];
-
-const recentProjects = [
-  { id: 1, name: "Sistema de Inventario", status: "En progreso", progress: 75 },
-  { id: 2, name: "App Móvil iOS", status: "En progreso", progress: 45 },
-  { id: 3, name: "Dashboard Analytics", status: "En revisión", progress: 90 },
-  { id: 4, name: "API REST v2", status: "Iniciando", progress: 20 },
-];
+import { FolderKanban, CheckSquare, Clock, TrendingUp, Loader2 } from "lucide-react";
+import { dashboardService, DashboardResponse } from "@/services/dashboardService";
+import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardResponse | null>(null);
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const loadDashboard = async () => {
+    try {
+      setLoading(true);
+      const response = await dashboardService.getDashboard();
+      console.log('📊 Dashboard cargado:', response);
+      setData(response);
+    } catch (error: any) {
+      console.error('❌ Error al cargar dashboard:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "No se pudo cargar el dashboard",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">No se pudo cargar el dashboard</p>
+        </div>
+      </div>
+    );
+  }
+
+  const stats = [
+    {
+      title: "Proyectos Activos",
+      value: data.estadisticas.proyectos_activos.toString(),
+      icon: FolderKanban,
+      color: "text-primary",
+    },
+    {
+      title: "Tareas Completadas",
+      value: data.estadisticas.tareas_completadas.toString(),
+      icon: CheckSquare,
+      color: "text-light-green",
+    },
+    {
+      title: "Tareas Pendientes",
+      value: data.estadisticas.tareas_pendientes.toString(),
+      icon: Clock,
+      color: "text-accent",
+    },
+    {
+      title: "Progreso General",
+      value: `${data.estadisticas.progreso_general}%`,
+      icon: TrendingUp,
+      color: "text-blue",
+    },
+  ];
+
+  const formatFecha = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getEstadoBadgeColor = (estado: string) => {
+    const estadoLower = estado.toLowerCase();
+    if (estadoLower.includes('progreso')) return 'default';
+    if (estadoLower.includes('revisión')) return 'secondary';
+    if (estadoLower.includes('iniciando')) return 'outline';
+    if (estadoLower.includes('completado')) return 'default';
+    return 'secondary';
+  };
+
+  const handleProyectoClick = (proyectoId: number) => {
+    navigate(`/projects/${proyectoId}`);
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
         <p className="text-muted-foreground">
-          Bienvenido al sistema de gestión del Semillero 4.0
+          {data.semillero && `${data.semillero.nombre} • `}
+          {data.campo && `${data.campo.nombre} • `}
+          {data.rol}
         </p>
       </div>
 
@@ -60,7 +122,6 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.change}</p>
             </CardContent>
           </Card>
         ))}
@@ -71,33 +132,61 @@ export default function Dashboard() {
           <CardTitle>Proyectos Recientes</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {recentProjects.map((project) => (
-              <div
-                key={project.id}
-                className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
-              >
-                <div className="flex-1">
-                  <h3 className="font-semibold">{project.name}</h3>
-                  <p className="text-sm text-muted-foreground">{project.status}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-32">
-                    <div className="mb-1 flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Progreso</span>
-                      <span className="font-medium">{project.progress}%</span>
+          {data.proyectos_recientes.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <FolderKanban className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>No hay proyectos disponibles</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {data.proyectos_recientes.map((proyecto) => (
+                <div
+                  key={proyecto.id}
+                  onClick={() => handleProyectoClick(proyecto.id)}
+                  className="flex items-center justify-between rounded-lg border p-4 transition-all hover:bg-muted/50 hover:shadow-md cursor-pointer"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold">{proyecto.titulo}</h3>
+                      <Badge variant={getEstadoBadgeColor(proyecto.estado)}>
+                        {proyecto.estado}
+                      </Badge>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full bg-primary transition-all"
-                        style={{ width: `${project.progress}%` }}
-                      />
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      {proyecto.campo && (
+                        <span>📂 {proyecto.campo.nombre}</span>
+                      )}
+                      <span>📅 {formatFecha(proyecto.fecha_actualizacion)}</span>
+                      {proyecto.total_actividades !== undefined && (
+                        <span>
+                          ✓ {proyecto.actividades_completadas}/{proyecto.total_actividades} actividades
+                        </span>
+                      )}
+                      {proyecto.mis_actividades && (
+                        <span>
+                          👤 Mis tareas: {proyecto.mis_actividades.completadas}/{proyecto.mis_actividades.total}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 ml-4">
+                    <div className="w-32">
+                      <div className="mb-1 flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Progreso</span>
+                        <span className="font-medium">{parseFloat(proyecto.porcentaje_avance).toFixed(0)}%</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full bg-primary transition-all"
+                          style={{ width: `${proyecto.porcentaje_avance}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

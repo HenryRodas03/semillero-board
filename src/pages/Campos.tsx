@@ -89,17 +89,17 @@ export default function Campos() {
           <div>
             <h1 className="text-3xl font-bold">Mis Campos de Investigación</h1>
             <p className="text-muted-foreground mt-2">
-              {data.semillero.nombre} • {data.rol}
+              {data?.semillero?.nombre || 'Sin semillero'} • {data?.rol || 'Sin rol'}
             </p>
           </div>
           <Badge variant="secondary" className="text-lg px-4 py-2">
-            {data.total} {data.total === 1 ? 'Campo' : 'Campos'}
+            {data?.total || 0} {data?.total === 1 ? 'Campo' : 'Campos'}
           </Badge>
         </div>
       </div>
 
       {/* Lista de Campos */}
-      {data.campos.length === 0 ? (
+      {!data?.campos || data.campos.length === 0 ? (
         <Card>
           <CardContent className="py-12">
             <div className="text-center">

@@ -22,7 +22,8 @@ import {
   Share2,
   User,
   AlertCircle,
-  Plus
+  Plus,
+  Edit
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -125,6 +126,23 @@ export default function CampoDetail() {
     id_rol: 4 // Por defecto Colaborador
   });
 
+  // Editar campo
+  const [openEditarCampo, setOpenEditarCampo] = useState(false);
+  const [editarCampoSubmitting, setEditarCampoSubmitting] = useState(false);
+  const [integrantesParaLider, setIntegrantesParaLider] = useState<Integrante[]>([]);
+  const [loadingIntegrantesLider, setLoadingIntegrantesLider] = useState(false);
+  const [imagenCampo, setImagenCampo] = useState<File | null>(null);
+  const [previewImagen, setPreviewImagen] = useState<string | null>(null);
+  const [campoEditado, setCampoEditado] = useState({
+    nombre: '',
+    descripcion: '',
+    lider: 0,
+    horario_reunion: '',
+    contacto_email: '',
+    contacto_redes_sociales: '',
+    activo: true
+  });
+
   // Helper para verificar si contacto_redes_sociales tiene contenido
   const hasRedesSociales = (redes: any): boolean => {
     if (!redes) return false;
@@ -152,6 +170,36 @@ export default function CampoDetail() {
       loadRolesDisponibles();
     }
   }, [openCrearIntegrante]);
+
+  useEffect(() => {
+    // Cargar integrantes cuando se abre el modal de editar campo
+    if (openEditarCampo && id) {
+      loadIntegrantesParaLider();
+      // Pre-cargar los datos del campo
+      if (campo) {
+        // Formatear redes sociales
+        let redesSociales = '';
+        if (campo.contacto_redes_sociales) {
+          if (typeof campo.contacto_redes_sociales === 'string' && campo.contacto_redes_sociales.trim()) {
+            redesSociales = campo.contacto_redes_sociales;
+          } else if (typeof campo.contacto_redes_sociales === 'object' && Object.keys(campo.contacto_redes_sociales).length > 0) {
+            redesSociales = JSON.stringify(campo.contacto_redes_sociales);
+          }
+        }
+        
+        setCampoEditado({
+          nombre: campo.nombre,
+          descripcion: campo.descripcion,
+          lider: campo.lider,
+          horario_reunion: campo.horario_reunion || '',
+          contacto_email: campo.contacto_email || '',
+          contacto_redes_sociales: redesSociales,
+          activo: true
+        });
+        setPreviewImagen(campo.ruta_imagen);
+      }
+    }
+  }, [openEditarCampo, id, campo]);
 
   const loadCampoDetail = async () => {
     if (!id) return;
@@ -342,6 +390,121 @@ export default function CampoDetail() {
     }
   };
 
+  const loadIntegrantesParaLider = async () => {
+    if (!id) return;
+    
+    try {
+      setLoadingIntegrantesLider(true);
+      const response = await camposService.getIntegrantes(parseInt(id));
+      console.log('👥 Integrantes para líder:', response);
+      console.log('👥 Primer integrante estructura:', response[0]);
+      setIntegrantesParaLider(response || []);
+    } catch (error: any) {
+      console.error('❌ Error al cargar integrantes:', error);
+      toast({
+        title: 'Error al cargar integrantes',
+        description: error.response?.data?.message || 'No se pudieron cargar los integrantes',
+        variant: 'destructive'
+      });
+      setIntegrantesParaLider([]);
+    } finally {
+      setLoadingIntegrantesLider(false);
+    }
+  };
+
+  const handleImagenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImagenCampo(file);
+      // Crear preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImagen(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditarCampo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!campoEditado.nombre.trim()) {
+      toast({ 
+        title: 'Nombre requerido', 
+        description: 'El nombre del campo es obligatorio', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    if (!campoEditado.descripcion.trim()) {
+      toast({ 
+        title: 'Descripción requerida', 
+        description: 'La descripción del campo es obligatoria', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    if (!id) return;
+
+    try {
+      setEditarCampoSubmitting(true);
+      
+      const formData = new FormData();
+      formData.append('nombre', campoEditado.nombre.trim());
+      formData.append('descripcion', campoEditado.descripcion.trim());
+      formData.append('lider', campoEditado.lider.toString());
+      
+      if (campoEditado.horario_reunion) {
+        formData.append('horario_reunion', campoEditado.horario_reunion);
+      }
+      
+      if (campoEditado.contacto_email) {
+        formData.append('contacto_email', campoEditado.contacto_email);
+      }
+      
+      if (campoEditado.contacto_redes_sociales) {
+        formData.append('contacto_redes_sociales', campoEditado.contacto_redes_sociales);
+      }
+      
+      formData.append('activo', campoEditado.activo ? '1' : '0');
+      
+      if (imagenCampo) {
+        formData.append('imagen', imagenCampo);
+      }
+
+      console.log('✏️ Editando campo:', campoEditado);
+      
+      await camposService.update(parseInt(id), formData);
+      
+      // Recargar el campo completo
+      await loadCampoDetail();
+      
+      // Cerrar modal y limpiar
+      setOpenEditarCampo(false);
+      setImagenCampo(null);
+      setPreviewImagen(null);
+      
+      toast({ 
+        title: 'Campo actualizado', 
+        description: 'El campo se ha actualizado correctamente' 
+      });
+    } catch (error: any) {
+      console.error('❌ Error al editar campo:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          'No se pudo actualizar el campo';
+      toast({ 
+        title: 'Error al editar campo', 
+        description: errorMessage, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setEditarCampoSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -377,13 +540,26 @@ export default function CampoDetail() {
   return (
     <div className="p-6 space-y-6">
       {/* Header con botón volver */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between">
         <Button asChild variant="ghost">
           <Link to="/campos">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
           </Link>
         </Button>
+        
+        {/* Botón Editar Campo - Solo visible para Admin Semillero (1) o Líder Campo (2) */}
+        {(user?.id_rol === 1 || user?.id_rol === 2) && (
+          <Button 
+            size="sm" 
+            onClick={() => setOpenEditarCampo(true)}
+            className="text-white"
+            style={{ backgroundColor: '#008042' }}
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            Editar Campo
+          </Button>
+        )}
       </div>
 
       {/* Información Principal */}
@@ -847,6 +1023,179 @@ export default function CampoDetail() {
                   </>
                 ) : (
                   'Crear Integrante'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Editar Campo */}
+      <Dialog open={openEditarCampo} onOpenChange={setOpenEditarCampo}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Campo de Investigación</DialogTitle>
+            <DialogDescription>
+              Actualiza la información del campo de investigación
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditarCampo} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="campo-nombre">
+                Nombre del Campo *
+              </Label>
+              <Input 
+                id="campo-nombre"
+                value={campoEditado.nombre} 
+                onChange={(e) => setCampoEditado(prev => ({ ...prev, nombre: e.target.value }))} 
+                placeholder="Ej: Inteligencia Artificial"
+                required 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="campo-descripcion">
+                Descripción *
+              </Label>
+              <Textarea 
+                id="campo-descripcion"
+                value={campoEditado.descripcion} 
+                onChange={(e) => setCampoEditado(prev => ({ ...prev, descripcion: e.target.value }))} 
+                placeholder="Describe el campo de investigación..."
+                rows={4}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="campo-lider">
+                Líder del Campo *
+              </Label>
+              {loadingIntegrantesLider ? (
+                <div className="flex items-center justify-center py-3 border rounded-md">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="text-sm text-muted-foreground">Cargando integrantes...</span>
+                </div>
+              ) : (
+                <select
+                  id="campo-lider"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={campoEditado.lider}
+                  onChange={(e) => setCampoEditado(prev => ({ ...prev, lider: Number(e.target.value) }))}
+                  required
+                >
+                  <option value="">Selecciona un líder</option>
+                  {integrantesParaLider.map((integrante) => {
+                    console.log('🔍 Integrante en map:', integrante);
+                    // Verificar si tiene la estructura usuario.id o directamente id
+                    const usuarioId = integrante.usuario?.id || integrante.id_usuario || integrante.id;
+                    const usuarioNombre = integrante.usuario?.nombre || integrante.nombre || 'Sin nombre';
+                    const usuarioCorreo = integrante.usuario?.correo || integrante.correo || '';
+                    
+                    return (
+                      <option key={integrante.id} value={usuarioId}>
+                        {usuarioNombre} {usuarioCorreo ? `(${usuarioCorreo})` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Selecciona el usuario que liderará este campo
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="campo-imagen">
+                Imagen del Campo (opcional)
+              </Label>
+              <Input 
+                id="campo-imagen"
+                type="file"
+                accept="image/*"
+                onChange={handleImagenChange}
+              />
+              {previewImagen && (
+                <div className="mt-2">
+                  <img 
+                    src={previewImagen} 
+                    alt="Preview" 
+                    className="w-full h-48 object-cover rounded-md"
+                  />
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Sube una imagen representativa del campo (JPG, PNG)
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="campo-horario">
+                Horario de Reunión (opcional)
+              </Label>
+              <Input 
+                id="campo-horario"
+                value={campoEditado.horario_reunion} 
+                onChange={(e) => setCampoEditado(prev => ({ ...prev, horario_reunion: e.target.value }))} 
+                placeholder="Ej: Lunes y Miércoles 3:00 PM - 5:00 PM"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="campo-email">
+                Email de Contacto (opcional)
+              </Label>
+              <Input 
+                id="campo-email"
+                type="email"
+                value={campoEditado.contacto_email} 
+                onChange={(e) => setCampoEditado(prev => ({ ...prev, contacto_email: e.target.value }))} 
+                placeholder="contacto@ucp.edu.co"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="campo-redes">
+                Redes Sociales (opcional)
+              </Label>
+              <Textarea 
+                id="campo-redes"
+                value={campoEditado.contacto_redes_sociales} 
+                onChange={(e) => setCampoEditado(prev => ({ ...prev, contacto_redes_sociales: e.target.value }))} 
+                placeholder='{"facebook": "url", "instagram": "url"}'
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                Puedes ingresar texto o JSON con las redes sociales
+              </p>
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                type="button" 
+                onClick={() => {
+                  setOpenEditarCampo(false);
+                  setImagenCampo(null);
+                  setPreviewImagen(null);
+                }}
+                disabled={editarCampoSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={editarCampoSubmitting || loadingIntegrantesLider}
+                style={{ backgroundColor: '#008042' }}
+                className="text-white"
+              >
+                {editarCampoSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Actualizando...
+                  </>
+                ) : (
+                  'Actualizar Campo'
                 )}
               </Button>
             </DialogFooter>
