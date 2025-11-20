@@ -1,9 +1,22 @@
 import axios from 'axios';
 
+// Normaliza una URL base de API: si viene sin '/api', lo añade.
+const normalizeApiUrl = (u?: string) => {
+  if (!u) return undefined;
+  try {
+    const trimmed = u.replace(/\/+$/g, '');
+    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+  } catch (err) {
+    return u;
+  }
+};
+
 // Prefer build-time VITE_API_URL, luego runtime variable (window.__RUNTIME_API_URL),
 // y finalmente la URL de producción indicada por el equipo si ninguna existe.
-const viteUrl = import.meta.env.VITE_API_URL;
-const runtimeVar = typeof window !== 'undefined' ? (window as any).__RUNTIME_API_URL : undefined;
+const viteUrlRaw = import.meta.env.VITE_API_URL as string | undefined;
+const runtimeVarRaw = typeof window !== 'undefined' ? (window as any).__RUNTIME_API_URL : undefined;
+const viteUrl = normalizeApiUrl(viteUrlRaw);
+const runtimeVar = normalizeApiUrl(runtimeVarRaw);
 const runtimeUrl = viteUrl || runtimeVar || 'https://gestionproyectos-8cuz.onrender.com/api';
 
 const api = axios.create({
@@ -11,7 +24,7 @@ const api = axios.create({
 });
 
 // Log de depuración para confirmar la URL base que usa el frontend
-const detectedSource = viteUrl ? 'VITE_API_URL' : runtimeVar ? 'window.__RUNTIME_API_URL' : 'fallback';
+const detectedSource = viteUrlRaw ? 'VITE_API_URL' : runtimeVarRaw ? 'window.__RUNTIME_API_URL' : 'fallback';
 console.debug('API baseURL inicializada:', api.defaults.baseURL, { source: detectedSource });
 
 // Interceptor para agregar el token JWT a todas las peticiones
