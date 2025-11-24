@@ -69,6 +69,18 @@ export const semillerosService = {
     return response.data;
   },
 
+  // Obtener el detalle del semillero para Líder de Campo (rol 2) con ver_detalle=true
+  async getSemilleroDetalle(id_semillero: number): Promise<any> {
+    const response = await api.get('/semilleros', {
+      params: {
+        ver_detalle: 'true',
+        id_semillero: id_semillero
+      }
+    });
+    // Devolver la respuesta completa que incluye {semillero: {...}, campos: [...]}
+    return response.data;
+  },
+
   // Obtener los campos de investigación del semillero del líder
   async getMisCampos(): Promise<any[]> {
     const response = await api.get('/semilleros/mi-semillero/campos');

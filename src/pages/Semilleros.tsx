@@ -49,6 +49,27 @@ export default function Semilleros() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
+    // Si es líder de campo (rol 2), redirigir al detalle de su semillero
+    if (user?.id_rol === 2) {
+      const loadSemilleroYRedirigir = async () => {
+        try {
+          const campoData = await import('@/services/camposService').then(m => m.camposService.getMiCampo());
+          if (campoData?.id_semillero) {
+            navigate(`/semilleros/${campoData.id_semillero}`);
+          }
+        } catch (error) {
+          console.error('Error al cargar campo:', error);
+          toast({
+            title: 'Error',
+            description: 'No se pudo cargar tu semillero',
+            variant: 'destructive'
+          });
+        }
+      };
+      loadSemilleroYRedirigir();
+      return;
+    }
+
     const fetchSemilleros = async () => {
       setLoading(true);
       try {
@@ -61,7 +82,7 @@ export default function Semilleros() {
       }
     };
     fetchSemilleros();
-  }, []);
+  }, [user?.id_rol, navigate, toast]);
 
   // Cargar usuarios y líneas de investigación cuando se abre el dialog
   useEffect(() => {
