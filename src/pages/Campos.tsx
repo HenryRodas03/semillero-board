@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { camposService } from "@/services/camposService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Users, FolderKanban, User, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Lider {
   nombre: string;
@@ -37,7 +38,9 @@ interface MisCamposResponse {
 }
 
 export default function Campos() {
+  const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<MisCamposResponse | null>(null);
 
@@ -51,6 +54,12 @@ export default function Campos() {
       const response = await camposService.getMisCamposUsuario();
       console.log('📋 Mis campos:', response);
       setData(response);
+      
+      // Si es líder de campo (rol 2) y tiene exactamente 1 campo, redirigir al detalle
+      if (user?.id_rol === 2 && response.campos && response.campos.length === 1) {
+        navigate(`/campos/${response.campos[0].id}`);
+        return;
+      }
     } catch (error: any) {
       console.error('❌ Error al cargar campos:', error);
       toast({

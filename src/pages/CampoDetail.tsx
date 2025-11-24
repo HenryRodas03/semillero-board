@@ -581,12 +581,14 @@ export default function CampoDetail() {
   if (!campo) {
     return (
       <div className="p-6">
-        <Button asChild variant="ghost" className="mb-4">
-          <Link to="/campos">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Link>
-        </Button>
+        {user?.id_rol !== 2 && (
+          <Button asChild variant="ghost" className="mb-4">
+            <Link to="/campos">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver
+            </Link>
+          </Button>
+        )}
         <Card>
           <CardContent className="py-12">
             <div className="text-center">
@@ -604,14 +606,17 @@ export default function CampoDetail() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header con botón volver */}
+      {/* Header con botón volver - Solo para roles que no son Líder de Campo */}
       <div className="flex items-center justify-between">
-        <Button asChild variant="ghost">
-          <Link to="/campos">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Link>
-        </Button>
+        {user?.id_rol !== 2 && (
+          <Button asChild variant="ghost">
+            <Link to="/campos">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver
+            </Link>
+          </Button>
+        )}
+        {user?.id_rol === 2 && <div />}
         
         {/* Botón Editar Campo - Solo visible para Admin Semillero (1), Líder Campo (2) o Super Admin (5) */}
         {(user?.id_rol === 1 || user?.id_rol === 2 || user?.id_rol === 5) && (

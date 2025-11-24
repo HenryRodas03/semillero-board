@@ -114,7 +114,11 @@ export default function SemilleroDetail() {
       // Si es rol 5 (SuperAdmin), usar ver_detalle=true con el id del semillero
       if (user?.id_rol === 5 && id) {
         responseData = await semillerosService.getMiSemilleroSuperAdmin(parseInt(id));
-      } 
+      }
+      // Si es rol 2 (Líder de Campo), usar ver_detalle=true con el id del semillero (solo lectura)
+      else if (user?.id_rol === 2 && id) {
+        responseData = await semillerosService.getSemilleroDetalle(parseInt(id));
+      }
       // Si es rol 1 (Admin Semillero), usar el endpoint de mi-semillero
       else if (user?.id_rol === 1) {
         responseData = await semillerosService.getMiSemillero();
@@ -132,8 +136,20 @@ export default function SemilleroDetail() {
       let semilleroData;
       let camposData = [];
       
+      // Si la respuesta tiene semilleros (plural) como array - caso de ver_detalle=true
+      if ((responseData as any).semilleros && Array.isArray((responseData as any).semilleros)) {
+        console.log('Estructura: semilleros array (ver_detalle=true)');
+        const semillerosArray = (responseData as any).semilleros;
+        if (semillerosArray.length > 0) {
+          semilleroData = semillerosArray[0];
+          // Los campos pueden venir en la respuesta principal o dentro del semillero
+          camposData = (responseData as any).campos || semilleroData.campos || [];
+        }
+        console.log('Semillero data:', semilleroData);
+        console.log('Campos data:', camposData);
+      }
       // Si la respuesta tiene la estructura {semillero: {...}, campos: [...]}
-      if ((responseData as any).semillero && typeof (responseData as any).semillero === 'object') {
+      else if ((responseData as any).semillero && typeof (responseData as any).semillero === 'object') {
         console.log('Estructura: semillero separado');
         semilleroData = (responseData as any).semillero;
         camposData = Array.isArray((responseData as any).campos) ? (responseData as any).campos : [];
@@ -517,10 +533,12 @@ export default function SemilleroDetail() {
             <Info className="w-4 h-4 mr-2" />
             Información
           </TabsTrigger>
-          <TabsTrigger value="campos">
-            <FolderOpen className="w-4 h-4 mr-2" />
-            Campos de Investigación ({campos.length})
-          </TabsTrigger>
+          {user?.id_rol !== 2 && (
+            <TabsTrigger value="campos">
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Campos de Investigación ({campos.length})
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="info" className="space-y-6">
