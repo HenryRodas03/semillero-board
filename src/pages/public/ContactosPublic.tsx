@@ -33,14 +33,16 @@ export default function ContactosPublic() {
   }, []);
   
   // Memoizar los conteos para evitar recalcular en cada render
+  const lideresAsignados = useMemo(() => lideres.filter(l => l.es_lider_de !== null), [lideres]);
+  const totalLideres = lideresAsignados.length;
   const totalSemilleros = useMemo(() => 
-    lideres.filter(l => l.es_lider_de?.tipo === "Semillero").length,
-    [lideres]
+    lideresAsignados.filter(l => l.es_lider_de?.tipo === "Semillero").length,
+    [lideresAsignados]
   );
   
   const totalCampos = useMemo(() => 
-    lideres.filter(l => l.es_lider_de?.tipo === "Campo de Investigación").length,
-    [lideres]
+    lideresAsignados.filter(l => l.es_lider_de?.tipo === "Campo de Investigación").length,
+    [lideresAsignados]
   );
 
   const loadLideres = async () => {
@@ -136,7 +138,7 @@ export default function ContactosPublic() {
                     onClick={() => setFilterTipo("todos")}
                     size="sm"
                   >
-                    Todos ({lideres.length})
+                    Todos ({totalLideres})
                   </Button>
                   <Button
                     variant={filterTipo === "semillero" ? "default" : "outline"}
@@ -165,7 +167,7 @@ export default function ContactosPublic() {
                       <User className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <p className="text-3xl font-bold text-blue-900">{lideres.length}</p>
+                      <p className="text-3xl font-bold text-blue-900">{totalLideres}</p>
                       <p className="text-sm text-blue-700">Total de Líderes</p>
                     </div>
                   </div>
