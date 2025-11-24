@@ -37,7 +37,6 @@ interface Proyecto {
   porcentaje_avance?: number;
   url?: string;
   fecha_creacion?: string;
-  fecha_creacion?: string;
   fecha_fin?: string;
 }
 
@@ -744,24 +743,6 @@ export default function CampoDetail() {
       {/* Integrantes */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Integrantes ({campo.integrantes.length})
-            </CardTitle>
-            {/* Botón crear integrante - Solo visible para Admin Semillero (1) o Líder Campo (2) */}
-            {(user?.id_rol === 1 || user?.id_rol === 2) && (
-              <Button 
-                size="sm" 
-                onClick={() => setOpenCrearIntegrante(true)}
-                className="shrink-0 text-white"
-                style={{ backgroundColor: '#008042' }}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Agregar Integrante
-              </Button>
-            )}
-          </div>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
