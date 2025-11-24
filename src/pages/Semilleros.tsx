@@ -582,6 +582,11 @@ export default function Semilleros() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Loading Overlay para eliminación */}
+      {isDeleting && (
+        <LoadingOverlay isLoading={isDeleting} message="Eliminando semillero..." />
+      )}
     </div>
   );
 }
