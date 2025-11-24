@@ -89,8 +89,8 @@ export default function SemillerosPublic() {
                   <CardHeader>
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-lg">{semillero.nombre}</CardTitle>
-                      <Badge variant={semillero.activo === 1 ? 'default' : 'secondary'}>
-                        {semillero.activo === 1 ? 'Abierto' : 'Cerrado'}
+                      <Badge variant={semillero.abierto ? 'default' : 'secondary'}>
+                        {semillero.abierto ? 'Abierto' : 'Cerrado'}
                       </Badge>
                     </div>
                     {semillero.linea && (

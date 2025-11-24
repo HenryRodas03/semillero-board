@@ -77,11 +77,6 @@ export default function Login() {
               Iniciar Sesión
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            <Link to="/register" className="text-primary hover:underline">
-              ¿No tienes una cuenta? Regístrate
-            </Link>
-          </div>
           <div className="mt-2 text-center text-sm">
             <Link to="/" className="text-muted-foreground hover:underline">
               Volver al inicio
