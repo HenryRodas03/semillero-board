@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +25,8 @@ import {
   User,
   AlertCircle,
   Plus,
-  Edit
+  Edit,
+  Trash2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -143,6 +145,14 @@ export default function CampoDetail() {
     contacto_redes_sociales: '',
     activo: true
   });
+
+  // Eliminar proyecto
+  const [proyectoToDelete, setProyectoToDelete] = useState<number | null>(null);
+  const [isDeletingProyecto, setIsDeletingProyecto] = useState(false);
+
+  // Eliminar integrante
+  const [integranteToDelete, setIntegranteToDelete] = useState<number | null>(null);
+  const [isDeletingIntegrante, setIsDeletingIntegrante] = useState(false);
 
   // Helper para verificar si contacto_redes_sociales tiene contenido
   const hasRedesSociales = (redes: any): boolean => {
@@ -506,6 +516,60 @@ export default function CampoDetail() {
     }
   };
 
+  const handleDeleteProyecto = async () => {
+    if (!proyectoToDelete) return;
+
+    try {
+      setIsDeletingProyecto(true);
+      await proyectosService.delete(proyectoToDelete);
+      
+      toast({
+        title: 'Éxito',
+        description: 'Proyecto eliminado correctamente'
+      });
+
+      // Recargar el campo completo
+      await loadCampoDetail();
+      setProyectoToDelete(null);
+    } catch (error: any) {
+      console.error('❌ Error al eliminar proyecto:', error);
+      toast({
+        title: 'Error al eliminar proyecto',
+        description: error.response?.data?.message || 'No se pudo eliminar el proyecto',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsDeletingProyecto(false);
+    }
+  };
+
+  const handleDeleteIntegrante = async () => {
+    if (!integranteToDelete || !id) return;
+
+    try {
+      setIsDeletingIntegrante(true);
+      await camposService.quitarIntegrante(parseInt(id), integranteToDelete);
+      
+      toast({
+        title: 'Éxito',
+        description: 'Integrante eliminado correctamente'
+      });
+
+      // Recargar el campo completo
+      await loadCampoDetail();
+      setIntegranteToDelete(null);
+    } catch (error: any) {
+      console.error('❌ Error al eliminar integrante:', error);
+      toast({
+        title: 'Error al eliminar integrante',
+        description: error.response?.data?.message || 'No se pudo eliminar el integrante',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsDeletingIntegrante(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -727,11 +791,29 @@ export default function CampoDetail() {
                         🔗 {proyecto.url}
                       </a>
                     )}
-                    <Button asChild size="sm" variant="outline" className="w-full">
-                      <Link to={`/projects/${proyecto.id}`}>
-                        Ver Proyecto
-                      </Link>
-                    </Button>
+                    
+                    {/* Botones de acción */}
+                    <div className="flex items-center gap-2 pt-2">
+                      <Button asChild size="sm" variant="outline" className="flex-1">
+                        <Link to={`/projects/${proyecto.id}`}>
+                          Ver Proyecto
+                        </Link>
+                      </Button>
+                      
+                      {/* Botón eliminar - Solo visible para Admin Semillero (1), Líder Campo (2) o SuperAdmin (5) */}
+                      {(user?.id_rol === 1 || user?.id_rol === 2 || user?.id_rol === 5) && (
+                        <Button 
+                          variant="destructive" 
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProyectoToDelete(proyecto.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -782,9 +864,26 @@ export default function CampoDetail() {
                       <Mail className="h-3 w-3" />
                       {integrante.usuario.correo}
                     </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {integrante.rol.nombre}
-                    </Badge>
+                    <div className="flex items-center justify-between">
+                      <Badge variant="secondary" className="text-xs">
+                        {integrante.rol.nombre}
+                      </Badge>
+                      
+                      {/* Botón eliminar - Solo visible para Admin Semillero (1), Líder Campo (2) o SuperAdmin (5) */}
+                      {(user?.id_rol === 1 || user?.id_rol === 2 || user?.id_rol === 5) && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIntegranteToDelete(integrante.id);
+                          }}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -1090,8 +1189,8 @@ export default function CampoDetail() {
                     console.log('🔍 Integrante en map:', integrante);
                     // Verificar si tiene la estructura usuario.id o directamente id
                     const usuarioId = integrante.usuario?.id || integrante.id_usuario || integrante.id;
-                    const usuarioNombre = integrante.usuario?.nombre || integrante.nombre || 'Sin nombre';
-                    const usuarioCorreo = integrante.usuario?.correo || integrante.correo || '';
+                    const usuarioNombre = integrante.usuario?.nombre || 'Sin nombre';
+                    const usuarioCorreo = integrante.usuario?.correo || '';
                     
                     return (
                       <option key={integrante.id} value={usuarioId}>
@@ -1203,6 +1302,50 @@ export default function CampoDetail() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog: Confirmar eliminación de proyecto */}
+      <AlertDialog open={proyectoToDelete !== null} onOpenChange={() => setProyectoToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El proyecto será eliminado permanentemente junto con todas sus actividades y tareas asociadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingProyecto}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteProyecto}
+              disabled={isDeletingProyecto}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingProyecto ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* AlertDialog: Confirmar eliminación de integrante */}
+      <AlertDialog open={integranteToDelete !== null} onOpenChange={() => setIntegranteToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El integrante será removido permanentemente de este campo de investigación.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingIntegrante}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteIntegrante}
+              disabled={isDeletingIntegrante}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingIntegrante ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Loading Overlays */}
       <LoadingOverlay 

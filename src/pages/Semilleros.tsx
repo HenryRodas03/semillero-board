@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Semillero, semillerosService } from '@/services/semillerosService';
 import { usuariosService } from '@/services/usuariosService';
 import { lineasInvestigacionService } from '@/services/lineasInvestigacionService';
-import { FolderOpen, Image as ImageIcon, Mail, Users, Plus, Upload, X } from 'lucide-react';
+import { FolderOpen, Image as ImageIcon, Mail, Users, Plus, Upload, X, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MiSemillero from './MiSemillero';
@@ -42,6 +43,10 @@ export default function Semilleros() {
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+
+  // Estados para eliminar semillero
+  const [semilleroToDelete, setSemilleroToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchSemilleros = async () => {
@@ -217,6 +222,34 @@ export default function Semilleros() {
     setImagePreview('');
   };
 
+  const handleDeleteSemillero = async () => {
+    if (!semilleroToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await semillerosService.delete(semilleroToDelete);
+
+      toast({
+        title: 'Éxito',
+        description: 'Semillero eliminado correctamente'
+      });
+
+      // Recargar semilleros
+      const updatedSemilleros = await semillerosService.getAll({ es_activo: true });
+      setSemilleros(Array.isArray(updatedSemilleros) ? updatedSemilleros : []);
+
+      setSemilleroToDelete(null);
+    } catch (error: any) {
+      toast({
+        title: 'Error al eliminar semillero',
+        description: error.response?.data?.message || 'No se pudo eliminar el semillero',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Si el usuario es líder de semillero, renderizamos aquí la vista de MiSemillero
   if (user && user.id_rol === 1) {
     return <MiSemillero />;
@@ -273,59 +306,76 @@ export default function Semilleros() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((semillero) => (
-            <Card key={semillero.id} className="relative overflow-hidden hover:shadow-lg transition-shadow" >
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate(`/semilleros/${semillero.id}`)}
-                onKeyDown={(e) => e.key === 'Enter' && navigate(`/semilleros/${semillero.id}`)}
-                className="absolute inset-0 z-10 bg-transparent"
-                aria-hidden
-              />
-              <div className="relative z-0">
-                <CardHeader className="flex flex-row items-center gap-4">
-                  {semillero.ruta_imagen ? (
-                    <img src={semillero.ruta_imagen} alt={semillero.nombre} className="w-16 h-16 object-cover rounded-lg border" />
-                  ) : (
-                    <div className="w-16 h-16 bg-muted rounded-lg border flex items-center justify-center">
-                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
+            <Card 
+              key={semillero.id} 
+              className="relative overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(`/semilleros/${semillero.id}`)}
+            >
+              <CardHeader className="flex flex-row items-center gap-4">
+                {semillero.ruta_imagen ? (
+                  <img src={semillero.ruta_imagen} alt={semillero.nombre} className="w-16 h-16 object-cover rounded-lg border" />
+                ) : (
+                  <div className="w-16 h-16 bg-muted rounded-lg border flex items-center justify-center">
+                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-lg truncate">{semillero.nombre}</CardTitle>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <Badge variant={semillero.activo === 1 ? 'default' : 'secondary'}>
+                      {semillero.activo === 1 ? 'Abierto' : 'Cerrado'}
+                    </Badge>
+                    {semillero.linea && <span className="text-xs text-muted-foreground truncate">{semillero.linea?.nombre}</span>}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-muted-foreground line-clamp-3">{semillero.descripcion || 'Sin descripción'}</div>
+                
+                {/* Información del líder y contacto */}
+                <div className="flex flex-col gap-2 text-xs text-muted-foreground">
+                  {semillero.liderUsuario && (
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">Líder: {semillero.liderUsuario.nombre}</span>
                     </div>
                   )}
-                  <div className="flex-1">
-                    <CardTitle className="text-lg truncate">{semillero.nombre}</CardTitle>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={semillero.activo === 1 ? 'default' : 'secondary'}>
-                        {semillero.activo === 1 ? 'Abierto' : 'Cerrado'}
-                      </Badge>
-                      {semillero.linea && <span className="text-xs text-muted-foreground">{semillero.linea?.nombre}</span>}
+                  {semillero.contacto && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{semillero.contacto}</span>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground line-clamp-3 mb-3">{semillero.descripcion || 'Sin descripción'}</div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      {semillero.liderUsuario && (
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          <span>Líder: {semillero.liderUsuario.nombre}</span>
-                        </div>
-                      )}
-                      {semillero.contacto && (
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          <span>{semillero.contacto}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <Button size="sm" variant="outline" onClick={() => navigate(`/semilleros/${semillero.id}`)}>
-                        Ver semillero
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </div>
+                  )}
+                </div>
+
+                {/* Botones de acción */}
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/semilleros/${semillero.id}`);
+                    }}
+                  >
+                    Ver semillero
+                  </Button>
+                  {user?.id_rol === 5 && (
+                    <Button 
+                      size="sm" 
+                      variant="destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSemilleroToDelete(semillero.id);
+                      }}
+                      title="Eliminar semillero"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -510,6 +560,28 @@ export default function Semilleros() {
       {isCreating && (
         <LoadingOverlay isLoading={isCreating} message="Creando semillero..." />
       )}
+
+      {/* AlertDialog para confirmar eliminación */}
+      <AlertDialog open={!!semilleroToDelete} onOpenChange={() => setSemilleroToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El semillero y todos sus datos asociados serán eliminados permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSemillero}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
