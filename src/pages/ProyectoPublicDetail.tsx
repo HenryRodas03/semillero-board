@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { proyectosService } from "@/services/proyectosService";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { publicService, ProyectoPublico } from "@/services/publicService";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   ArrowLeft, 
@@ -13,298 +13,360 @@ import {
   Building2,
   TrendingUp,
   Clock,
-  CheckSquare
+  CheckSquare,
+  BookOpen,
+  Home
 } from "lucide-react";
-
-interface ProyectoDetalle {
-  id: number;
-  titulo: string;
-  descripcion: string;
-  ruta_foto?: string;
-  url?: string;
-  porcentaje_avance: number;
-  fecha_creacion: string;
-  fecha_actualizacion: string;
-  id_estado: number;
-  id_campo: number;
-  estado?: {
-    id: number;
-    estado: string;
-  };
-  campo?: {
-    id: number;
-    nombre: string;
-    semillero?: {
-      id: number;
-      nombre: string;
-    };
-  };
-}
 
 export default function ProyectoPublicDetail() {
   const { id } = useParams<{ id: string }>();
-  const [proyecto, setProyecto] = useState<ProyectoDetalle | null>(null);
+  const navigate = useNavigate();
+  const [proyecto, setProyecto] = useState<ProyectoPublico | null>(null);
+  const [actividades, setActividades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProyecto();
+    if (id) {
+      loadProyecto();
+    }
   }, [id]);
 
   const loadProyecto = async () => {
-    if (!id) return;
-    
     try {
       setLoading(true);
       console.log('📋 Cargando detalle del proyecto:', id);
-      const data = await proyectosService.getById(parseInt(id));
+      
+      // Cargar proyecto usando publicService
+      const data = await publicService.getProyectoDetalle(parseInt(id!));
       console.log('✅ Proyecto cargado:', data);
-      setProyecto(data.project || data);
+      setProyecto(data);
+
+      // Cargar actividades del proyecto
+      try {
+        const actividadesData = await publicService.getActividadesProyecto(parseInt(id!));
+        console.log('✅ Actividades cargadas:', actividadesData);
+        console.log('📊 Cantidad de actividades:', actividadesData.length);
+        console.log('📊 Tipo de dato:', Array.isArray(actividadesData) ? 'Array' : typeof actividadesData);
+        setActividades(actividadesData);
+        console.log('✅ Estado de actividades actualizado');
+      } catch (error) {
+        console.error('Error al cargar actividades:', error);
+      }
     } catch (error: any) {
       console.error('❌ Error al cargar proyecto:', error);
-      setError('No se pudo cargar la información del proyecto');
     } finally {
       setLoading(false);
     }
   };
 
-  const getEstadoBadgeColor = (idEstado: number) => {
-    switch (idEstado) {
-      case 1: return "bg-green-500 text-white";
-      case 2: return "bg-yellow-500 text-white";
-      case 3: return "bg-blue-500 text-white";
-      default: return "bg-gray-500 text-white";
-    }
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="container mx-auto px-4 py-16">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
+            <p className="mt-4 text-muted-foreground">Cargando proyecto...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (error || !proyecto) {
+  console.log('🎨 Renderizando componente. Actividades:', actividades.length);
+
+  if (!proyecto) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] p-6">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center">
-            <p className="text-red-500 mb-4">{error || 'Proyecto no encontrado'}</p>
-            <Link to="/campos">
-              <Button>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver a Campos
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="container mx-auto px-4 py-16">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Proyecto no encontrado</p>
+                <Link to="/public/campos">
+                  <Button className="mt-4">Volver a Campos</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header con botón de volver */}
-        <div className="mb-6">
-          <Link to={`/campos/${proyecto.id_campo}`}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver al Campo
-            </Button>
-          </Link>
-        </div>
-
-        {/* Imagen del proyecto */}
-        {proyecto.ruta_foto && (
-          <div className="mb-8 rounded-lg overflow-hidden shadow-lg">
-            <img
-              src={proyecto.ruta_foto}
-              alt={proyecto.titulo}
-              className="w-full h-64 md:h-96 object-cover"
-            />
-          </div>
-        )}
-
-        {/* Título y Estado */}
-        <div className="mb-8">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-gray-900 mb-3">
-                {proyecto.titulo}
-              </h1>
-              {proyecto.estado && (
-                <Badge className={`${getEstadoBadgeColor(proyecto.id_estado)} text-sm px-3 py-1`}>
-                  {proyecto.estado.estado}
-                </Badge>
-              )}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Navbar */}
+      <nav className="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-gray-900">Semilleros UCP</h1>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Link to="/">
+                <Button variant="ghost" size="sm">
+                  <Home className="h-4 w-4 mr-2" />
+                  Inicio
+                </Button>
+              </Link>
+              <Link to="/public/semilleros">
+                <Button variant="ghost" size="sm">Semilleros</Button>
+              </Link>
+              <Link to="/public/campos">
+                <Button variant="ghost" size="sm">Campos</Button>
+              </Link>
+              <Link to="/public/publicaciones">
+                <Button variant="ghost" size="sm">Publicaciones</Button>
+              </Link>
+              <Link to="/login">
+                <Button size="sm">Iniciar Sesión</Button>
+              </Link>
             </div>
           </div>
-
-          {/* Descripción */}
-          {proyecto.descripcion && (
-            <p className="text-lg text-gray-600 mt-4">
-              {proyecto.descripcion}
-            </p>
-          )}
         </div>
+      </nav>
 
-        {/* Cards de información */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Información del Campo y Semillero */}
-          {proyecto.campo && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <Building2 className="mr-2 h-5 w-5 text-blue-600" />
-                  Campo y Semillero
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm text-gray-500">Campo de Investigación</p>
-                  <p className="font-semibold text-gray-900">{proyecto.campo.nombre}</p>
+      {/* Content */}
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <Button 
+          variant="ghost" 
+          className="mb-6"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Volver
+        </Button>
+
+        {/* Hero Section */}
+        <div className="relative mb-8 rounded-xl overflow-hidden">
+          {proyecto.ruta_foto ? (
+            <div className="relative h-64 md:h-80">
+              <img 
+                src={proyecto.ruta_foto} 
+                alt={proyecto.titulo}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-8">
+                <div className="flex items-center gap-3 mb-3">
+                  <Badge className="text-sm bg-white/20 text-white border-0">
+                    {proyecto.estado_nombre || 'En Progreso'}
+                  </Badge>
+                  {proyecto.campo_nombre && (
+                    <Badge variant="outline" className="bg-white/20 text-white border-white/30">
+                      {proyecto.campo_nombre}
+                    </Badge>
+                  )}
                 </div>
-                {proyecto.campo.semillero && (
-                  <div>
-                    <p className="text-sm text-gray-500">Semillero</p>
-                    <p className="font-semibold text-gray-900">{proyecto.campo.semillero.nombre}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Progreso */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center text-lg">
-                <TrendingUp className="mr-2 h-5 w-5 text-green-600" />
-                Progreso del Proyecto
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold text-gray-900">
-                    {parseFloat(proyecto.porcentaje_avance?.toString() || '0').toFixed(0)}%
-                  </span>
-                  <span className="text-sm text-gray-500">Completado</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-green-600 h-3 rounded-full transition-all"
-                    style={{ 
-                      width: `${parseFloat(proyecto.porcentaje_avance?.toString() || '0')}%` 
-                    }}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Fechas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center text-lg">
-                <Calendar className="mr-2 h-5 w-5 text-purple-600" />
-                Fechas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-sm text-gray-500 flex items-center">
-                  <Clock className="mr-2 h-4 w-4" />
-                  Fecha de Creación
-                </p>
-                <p className="font-semibold text-gray-900 ml-6">
-                  {new Date(proyecto.fecha_creacion).toLocaleDateString('es-ES', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 flex items-center">
-                  <Clock className="mr-2 h-4 w-4" />
-                  Última Actualización
-                </p>
-                <p className="font-semibold text-gray-900 ml-6">
-                  {new Date(proyecto.fecha_actualizacion).toLocaleDateString('es-ES', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Enlaces */}
-          {proyecto.url && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <FolderOpen className="mr-2 h-5 w-5 text-orange-600" />
-                  Recursos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <a
-                  href={proyecto.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <span className="font-medium text-blue-600">Ver Repositorio</span>
-                  <ExternalLink className="h-5 w-5 text-blue-600" />
-                </a>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Actividades */}
-          <Link to={`/projects/${proyecto.id}/actividades`}>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <CheckSquare className="mr-2 h-5 w-5 text-indigo-600" />
-                  Actividades del Proyecto
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <span className="font-medium text-indigo-600">Ver Tablero de Actividades</span>
-                  <ExternalLink className="h-5 w-5 text-indigo-600" />
-                </div>
-                <p className="text-sm text-gray-500 mt-3">
-                  Gestiona y visualiza las actividades del proyecto en formato Kanban
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
-
-        {/* Footer con más información */}
-        {proyecto.campo && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center text-gray-500">
-                <p className="text-sm">
-                  Este proyecto pertenece al campo de <strong>{proyecto.campo.nombre}</strong>
-                </p>
-                {proyecto.campo.semillero && (
-                  <p className="text-sm mt-1">
-                    del semillero <strong>{proyecto.campo.semillero.nombre}</strong>
+                <h1 className="text-3xl md:text-5xl font-bold text-white mb-3">
+                  {proyecto.titulo}
+                </h1>
+                {proyecto.descripcion && (
+                  <p className="text-lg text-white/90 max-w-3xl line-clamp-2">
+                    {proyecto.descripcion}
                   </p>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-8 md:p-12">
+              <div className="flex items-center gap-3 mb-3">
+                <Badge className="bg-white/20 text-white border-0">
+                  {proyecto.estado_nombre || 'En Progreso'}
+                </Badge>
+                {proyecto.campo_nombre && (
+                  <Badge variant="outline" className="bg-white/20 text-white border-white/30">
+                    {proyecto.campo_nombre}
+                  </Badge>
+                )}
+              </div>
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-3">
+                {proyecto.titulo}
+              </h1>
+              {proyecto.descripcion && (
+                <p className="text-lg text-white/90 max-w-3xl line-clamp-2">
+                  {proyecto.descripcion}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Descripción del Proyecto */}
+            {proyecto.descripcion && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    Acerca del Proyecto
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {proyecto.descripcion}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Actividades del Proyecto */}
+            {actividades.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <CheckSquare className="h-5 w-5" />
+                        Actividades
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        Actividades registradas en el proyecto
+                      </CardDescription>
+                    </div>
+                    <Badge variant="secondary">{actividades.length}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {actividades.map((actividad: any, index: number) => (
+                      <div 
+                        key={actividad.id || index}
+                        className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <h4 className="font-medium mb-1">{actividad.titulo || actividad.nombre}</h4>
+                            {actividad.descripcion && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {actividad.descripcion}
+                              </p>
+                            )}
+                          </div>
+                          {actividad.estado && (
+                            <Badge variant="outline" className="text-xs whitespace-nowrap">
+                              {actividad.estado}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Progreso */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Progreso
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-3xl font-bold text-gray-900">
+                      {proyecto.porcentaje_avance}%
+                    </span>
+                    <span className="text-sm text-muted-foreground">Completado</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div
+                      className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all"
+                      style={{ width: `${proyecto.porcentaje_avance}%` }}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Información del Campo */}
+            {proyecto.campo_nombre && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    Campo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="font-medium">{proyecto.campo_nombre}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Fechas */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Fechas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {proyecto.fecha_creacion && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <Clock className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Creación</p>
+                        <p className="text-sm font-medium">
+                          {new Date(proyecto.fecha_creacion).toLocaleDateString('es-ES')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Resumen */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                        <CheckSquare className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Actividades</p>
+                        <p className="text-2xl font-bold">{actividades.length}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t mt-20">
+        <div className="container mx-auto px-4 py-6">
+          <div className="text-center text-sm text-muted-foreground">
+            <p>&copy; 2024 Semilleros UCP. Todos los derechos reservados.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

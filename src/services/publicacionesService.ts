@@ -18,8 +18,9 @@ export interface Publicacion {
 }
 
 const publicacionesService = {
-  async getAll() {
-    const res = await api.get('/publicaciones');
+  async getAll(params?: { id_campo?: number }) {
+    const res = await api.get('/publicaciones', { params });
+    // La respuesta tiene estructura: { total, filtros, publicaciones }
     return res.data.publicaciones || res.data;
   },
 

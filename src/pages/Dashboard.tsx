@@ -21,14 +21,25 @@ export default function Dashboard() {
       setLoading(true);
       const response = await dashboardService.getDashboard();
       console.log('📊 Dashboard cargado:', response);
+      
+      // Validar que la respuesta tenga la estructura correcta
+      if (!response || typeof response !== 'object') {
+        throw new Error('Respuesta inválida del servidor');
+      }
+      
       setData(response);
     } catch (error: any) {
       console.error('❌ Error al cargar dashboard:', error);
+      console.error('❌ Error response:', error.response);
+      
       toast({
         title: "Error",
-        description: error.response?.data?.message || "No se pudo cargar el dashboard",
+        description: error.response?.data?.message || error.message || "No se pudo cargar el dashboard",
         variant: "destructive",
       });
+      
+      // Establecer data como null para mostrar el mensaje de error
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -42,7 +53,7 @@ export default function Dashboard() {
     );
   }
 
-  if (!data) {
+  if (!data || !data.estadisticas) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
@@ -55,25 +66,25 @@ export default function Dashboard() {
   const stats = [
     {
       title: "Proyectos Activos",
-      value: data.estadisticas.proyectos_activos.toString(),
+      value: (data.estadisticas?.proyectos_activos ?? 0).toString(),
       icon: FolderKanban,
       color: "text-primary",
     },
     {
       title: "Tareas Completadas",
-      value: data.estadisticas.tareas_completadas.toString(),
+      value: (data.estadisticas?.tareas_completadas ?? 0).toString(),
       icon: CheckSquare,
       color: "text-light-green",
     },
     {
       title: "Tareas Pendientes",
-      value: data.estadisticas.tareas_pendientes.toString(),
+      value: (data.estadisticas?.tareas_pendientes ?? 0).toString(),
       icon: Clock,
       color: "text-accent",
     },
     {
       title: "Progreso General",
-      value: `${data.estadisticas.progreso_general}%`,
+      value: `${data.estadisticas?.progreso_general ?? 0}%`,
       icon: TrendingUp,
       color: "text-blue",
     },
@@ -132,7 +143,7 @@ export default function Dashboard() {
           <CardTitle>Proyectos Recientes</CardTitle>
         </CardHeader>
         <CardContent>
-          {data.proyectos_recientes.length === 0 ? (
+          {!data.proyectos_recientes || data.proyectos_recientes.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <FolderKanban className="h-12 w-12 mx-auto mb-3 opacity-50" />
               <p>No hay proyectos disponibles</p>

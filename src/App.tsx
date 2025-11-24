@@ -8,7 +8,6 @@ import { AppLayout } from "./components/Layout/AppLayout";
 
 // Pages
 import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
 import CampoDetail from "./pages/CampoDetail";
 import CampoDetailLider from "./pages/CampoDetailLider";
 import Campos from "./pages/Campos";
@@ -35,6 +34,10 @@ import ProyectoActividades from "./pages/ProyectoActividades";
 import EventosPublic from "./pages/public/EventosPublic";
 import SemilleroPublicDetail from "./pages/public/SemilleroPublicDetail";
 import PublicacionPublicDetail from "./pages/PublicacionPublicDetail";
+import PublicacionesPublic from "./pages/public/PublicacionesPublic";
+import SemillerosPublic from "./pages/public/SemillerosPublic";
+import ProyectosPublic from "./pages/public/ProyectosPublic";
+import ContactosPublic from "./pages/public/ContactosPublic";
 
 const queryClient = new QueryClient();
 
@@ -49,12 +52,15 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/public/semilleros" element={<SemillerosPublic />} />
             <Route path="/public/semillero/:id" element={<SemilleroPublicDetail />} />
+            <Route path="/public/campos" element={<ProyectosPublic />} />
             <Route path="/public/campo/:id" element={<CampoPublicDetail />} />
-            <Route path="/public/proyecto/:id" element={<AppLayout><ProyectoPublicDetail /></AppLayout>} />
+            <Route path="/public/proyecto/:id" element={<ProyectoPublicDetail />} />
             <Route path="/public/publicacion/:id" element={<PublicacionPublicDetail />} />
             <Route path="/public/eventos" element={<EventosPublic />} />
+            <Route path="/public/publicaciones" element={<PublicacionesPublic />} />
+            <Route path="/public/contactos" element={<ContactosPublic />} />
 
             {/* Protected Routes */}
             <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />

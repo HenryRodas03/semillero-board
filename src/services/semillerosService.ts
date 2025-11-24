@@ -57,6 +57,18 @@ export const semillerosService = {
     return data;
   },
 
+  // Obtener el detalle del semillero del SuperAdmin (rol 5) con ver_detalle=true
+  async getMiSemilleroSuperAdmin(id_semillero: number): Promise<any> {
+    const response = await api.get('/semilleros', {
+      params: {
+        ver_detalle: 'true',
+        id_semillero: id_semillero
+      }
+    });
+    // Devolver la respuesta completa que incluye {semillero: {...}, campos: [...]}
+    return response.data;
+  },
+
   // Obtener los campos de investigación del semillero del líder
   async getMisCampos(): Promise<any[]> {
     const response = await api.get('/semilleros/mi-semillero/campos');
@@ -111,8 +123,12 @@ export const semillerosService = {
   },
 
   // Crear un semillero
-  async create(data: CreateSemilleroDto): Promise<Semillero> {
-    const response = await api.post('/semilleros', data);
+  async create(data: FormData): Promise<Semillero> {
+    const response = await api.post('/semilleros', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
     return response.data;
   },
 

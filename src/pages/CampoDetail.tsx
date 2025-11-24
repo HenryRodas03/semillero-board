@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { 
   Loader2, 
   ArrowLeft, 
@@ -35,6 +36,7 @@ interface Proyecto {
   estado?: number;
   porcentaje_avance?: number;
   url?: string;
+  fecha_creacion?: string;
   fecha_creacion?: string;
   fecha_fin?: string;
 }
@@ -760,6 +762,24 @@ export default function CampoDetail() {
               </Button>
             )}
           </div>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Integrantes ({campo.integrantes.length})
+            </CardTitle>
+            {/* Botón crear integrante - Solo visible para Admin Semillero (1) o Líder Campo (2) */}
+            {(user?.id_rol === 1 || user?.id_rol === 2) && (
+              <Button 
+                size="sm" 
+                onClick={() => setOpenCrearIntegrante(true)}
+                className="shrink-0 text-white"
+                style={{ backgroundColor: '#008042' }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Agregar Integrante
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {campo.integrantes.length === 0 ? (
@@ -1202,6 +1222,20 @@ export default function CampoDetail() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Loading Overlays */}
+      <LoadingOverlay 
+        isLoading={crearProyectoSubmitting} 
+        message="Creando proyecto..." 
+      />
+      <LoadingOverlay 
+        isLoading={crearIntegranteSubmitting} 
+        message="Agregando integrante..." 
+      />
+      <LoadingOverlay 
+        isLoading={editarCampoSubmitting} 
+        message="Actualizando campo..." 
+      />
     </div>
   );
 }

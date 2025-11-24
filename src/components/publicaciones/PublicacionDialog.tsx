@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import React, { useEffect, useState } from 'react';
 
 interface Props {
@@ -23,6 +24,7 @@ export function PublicacionDialog({ open, onOpenChange, publication, campos = []
   const [imagen2, setImagen2] = useState<File | null>(null);
   const [imagen3, setImagen3] = useState<File | null>(null);
   const [selectedCampo, setSelectedCampo] = useState<number | null>(selectedCampoId || null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (publication) {
@@ -46,6 +48,7 @@ export function PublicacionDialog({ open, onOpenChange, publication, campos = []
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     // Validación básica en cliente para evitar enviar campos vacíos
     const missing: string[] = [];
     if (!selectedCampo) missing.push('id_campo');
@@ -57,31 +60,37 @@ export function PublicacionDialog({ open, onOpenChange, publication, campos = []
       return;
     }
 
-    const fd = new FormData();
-    fd.append('titulo', titulo);
-    fd.append('descripcion', descripcion);
-    fd.append('tipo', tipo);
-    fd.append('id_campo', String(selectedCampo));
-    if (imagen1) fd.append('imagen_1', imagen1);
-    if (imagen2) fd.append('imagen_2', imagen2);
-    if (imagen3) fd.append('imagen_3', imagen3);
-
-    // Loguear contenido del FormData para depuración (iterar entries)
     try {
-      const entries: Array<string> = [];
-      // eslint-disable-next-line no-restricted-syntax
-      for (const pair of (fd as any).entries()) {
-        const key = pair[0];
-        const value = pair[1];
-        if (value instanceof File) entries.push(`${key}=File(${value.name})`);
-        else entries.push(`${key}=${String(value)}`);
-      }
-      console.debug('PublicacionDialog - FormData:', entries.join(', '));
-    } catch (err) {
-      console.debug('PublicacionDialog - no se pudo leer FormData para debug');
-    }
+      setSaving(true);
+      
+      const fd = new FormData();
+      fd.append('titulo', titulo);
+      fd.append('descripcion', descripcion);
+      fd.append('tipo', tipo);
+      fd.append('id_campo', String(selectedCampo));
+      if (imagen1) fd.append('imagen_1', imagen1);
+      if (imagen2) fd.append('imagen_2', imagen2);
+      if (imagen3) fd.append('imagen_3', imagen3);
 
-    await onSave(fd, publication?.id);
+      // Loguear contenido del FormData para depuración (iterar entries)
+      try {
+        const entries: Array<string> = [];
+        // eslint-disable-next-line no-restricted-syntax
+        for (const pair of (fd as any).entries()) {
+          const key = pair[0];
+          const value = pair[1];
+          if (value instanceof File) entries.push(`${key}=File(${value.name})`);
+          else entries.push(`${key}=${String(value)}`);
+        }
+        console.debug('PublicacionDialog - FormData:', entries.join(', '));
+      } catch (err) {
+        console.debug('PublicacionDialog - no se pudo leer FormData para debug');
+      }
+
+      await onSave(fd, publication?.id);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -151,11 +160,29 @@ export function PublicacionDialog({ open, onOpenChange, publication, campos = []
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit">{publication ? 'Guardar' : 'Crear'}</Button>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              disabled={saving}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="submit"
+              disabled={saving}
+            >
+              {saving ? 'Guardando...' : (publication ? 'Guardar' : 'Crear')}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
+      
+      {/* Loading Overlay */}
+      <LoadingOverlay 
+        isLoading={saving} 
+        message={publication ? 'Actualizando publicación...' : 'Creando publicación...'} 
+      />
     </Dialog>
   );
 }
