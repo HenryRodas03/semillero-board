@@ -307,8 +307,8 @@ export default function CampoDetail() {
     try {
       setLoadingRoles(true);
       const response = await usuariosService.getRolesDisponibles();
-      // Filtrar para excluir "Admin Semillero" (id: 1)
-      const rolesFiltrados = response.roles.filter(rol => rol.id !== 1);
+      // Filtrar para excluir "Admin Semillero" (id: 1) y "Super Admin" (id: 5)
+      const rolesFiltrados = response.roles.filter(rol => rol.id !== 1 && rol.id !== 5);
       setRolesDisponibles(rolesFiltrados);
     } catch (error: any) {
       console.error('❌ Error al cargar roles:', error);
@@ -613,8 +613,8 @@ export default function CampoDetail() {
           </Link>
         </Button>
         
-        {/* Botón Editar Campo - Solo visible para Admin Semillero (1) o Líder Campo (2) */}
-        {(user?.id_rol === 1 || user?.id_rol === 2) && (
+        {/* Botón Editar Campo - Solo visible para Admin Semillero (1), Líder Campo (2) o Super Admin (5) */}
+        {(user?.id_rol === 1 || user?.id_rol === 2 || user?.id_rol === 5) && (
           <Button 
             size="sm" 
             onClick={() => setOpenEditarCampo(true)}
@@ -744,8 +744,8 @@ export default function CampoDetail() {
               <FolderKanban className="h-5 w-5" />
               Proyectos ({campo.proyectos.length})
             </CardTitle>
-            {/* Botón crear proyecto - Solo visible para Admin Semillero (1) o Líder Campo (2) */}
-            {(user?.id_rol === 1 || user?.id_rol === 2) && (
+            {/* Botón crear proyecto - Solo visible para Admin Semillero (1), Líder Campo (2) o Super Admin (5) */}
+            {(user?.id_rol === 1 || user?.id_rol === 2 || user?.id_rol === 5) && (
               <Button 
                 size="sm" 
                 onClick={() => setOpenCrearProyecto(true)}
@@ -830,8 +830,8 @@ export default function CampoDetail() {
               <Users className="h-5 w-5" />
               Integrantes ({campo.integrantes.length})
             </CardTitle>
-            {/* Botón crear integrante - Solo visible para Admin Semillero (1) o Líder Campo (2) */}
-            {(user?.id_rol === 1 || user?.id_rol === 2) && (
+            {/* Botón crear integrante - Solo visible para Admin Semillero (1), Líder Campo (2) o Super Admin (5) */}
+            {(user?.id_rol === 1 || user?.id_rol === 2 || user?.id_rol === 5) && (
               <Button 
                 size="sm" 
                 onClick={() => setOpenCrearIntegrante(true)}

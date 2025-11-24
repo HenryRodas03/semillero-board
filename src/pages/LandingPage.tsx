@@ -77,7 +77,7 @@ export default function LandingPage() {
                 <BookOpen className="h-12 w-12 text-primary mb-4" />
                 <CardTitle>Semilleros</CardTitle>
                 <CardDescription>
-                  Gestiona múltiples semilleros y campos de investigación
+                  Gestiona múltiples semilleros
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -86,9 +86,9 @@ export default function LandingPage() {
             <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
               <CardHeader>
                 <Target className="h-12 w-12 text-primary mb-4" />
-                <CardTitle>Proyectos</CardTitle>
+                <CardTitle>Campos</CardTitle>
                 <CardDescription>
-                  Organiza y monitorea proyectos de investigación
+                  Organiza y monitorea campos de investigación
                 </CardDescription>
               </CardHeader>
             </Card>

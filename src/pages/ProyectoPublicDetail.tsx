@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { publicService, ProyectoPublico } from "@/services/publicService";
+import { proyectosService } from "@/services/proyectosService";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +23,11 @@ import {
 export default function ProyectoPublicDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [proyecto, setProyecto] = useState<ProyectoPublico | null>(null);
   const [actividades, setActividades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [campoId, setCampoId] = useState<number | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -40,6 +44,18 @@ export default function ProyectoPublicDetail() {
       const data = await publicService.getProyectoDetalle(parseInt(id!));
       console.log('✅ Proyecto cargado:', data);
       setProyecto(data);
+
+      // Si el usuario está autenticado, obtener el id_campo del proyecto
+      if (user) {
+        try {
+          const projectData = await proyectosService.getById(parseInt(id!));
+          const fieldId = projectData?.id_campo || (projectData as any)?.project?.id_campo;
+          setCampoId(fieldId);
+          console.log('✅ Campo ID obtenido:', fieldId);
+        } catch (error) {
+          console.error('Error al obtener campo ID:', error);
+        }
+      }
 
       // Cargar actividades del proyecto
       try {
@@ -61,7 +77,7 @@ export default function ProyectoPublicDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className={user ? "" : "min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50"}>
         <div className="container mx-auto px-4 py-16">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
@@ -76,15 +92,15 @@ export default function ProyectoPublicDetail() {
 
   if (!proyecto) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className={user ? "" : "min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50"}>
         <div className="container mx-auto px-4 py-16">
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-12">
                 <p className="text-muted-foreground">Proyecto no encontrado</p>
-                <Link to="/public/campos">
-                  <Button className="mt-4">Volver a Campos</Button>
-                </Link>
+                <Button onClick={() => navigate(-1)} className="mt-4">
+                  Volver
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -93,6 +109,263 @@ export default function ProyectoPublicDetail() {
     );
   }
 
+  // Si el usuario está autenticado, mostrar vista sin navbar público
+  if (user) {
+    return (
+      <div className="p-6 space-y-6">
+        <Button 
+          variant="ghost" 
+          onClick={() => {
+            if (campoId) {
+              navigate(`/campos/${campoId}`);
+            } else {
+              navigate('/campos');
+            }
+          }}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Volver al Campo
+        </Button>
+
+        {/* Hero Section */}
+        <div className="relative rounded-xl overflow-hidden">
+          {proyecto.ruta_foto ? (
+            <div className="relative h-64 md:h-80">
+              <img 
+                src={proyecto.ruta_foto} 
+                alt={proyecto.titulo}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-8">
+                <div className="flex items-center gap-3 mb-3">
+                  <Badge className="text-sm bg-white/20 text-white border-0">
+                    {proyecto.estado_nombre || 'En Progreso'}
+                  </Badge>
+                  {proyecto.campo_nombre && (
+                    <Badge variant="outline" className="bg-white/20 text-white border-white/30">
+                      {proyecto.campo_nombre}
+                    </Badge>
+                  )}
+                </div>
+                <h1 className="text-3xl md:text-5xl font-bold text-white mb-3">
+                  {proyecto.titulo}
+                </h1>
+                {proyecto.descripcion && (
+                  <p className="text-lg text-white/90 max-w-3xl line-clamp-2">
+                    {proyecto.descripcion}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-gray-700 via-gray-600 to-gray-700 p-8 md:p-12">
+              <div className="flex items-center gap-3 mb-3">
+                <Badge className="bg-white/20 text-white border-0">
+                  {proyecto.estado_nombre || 'En Progreso'}
+                </Badge>
+                {proyecto.campo_nombre && (
+                  <Badge variant="outline" className="bg-white/20 text-white border-white/30">
+                    {proyecto.campo_nombre}
+                  </Badge>
+                )}
+              </div>
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-3">
+                {proyecto.titulo}
+              </h1>
+              {proyecto.descripcion && (
+                <p className="text-lg text-white/90 max-w-3xl line-clamp-2">
+                  {proyecto.descripcion}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Descripción del Proyecto */}
+            {proyecto.descripcion && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    Acerca del Proyecto
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {proyecto.descripcion}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Actividades del Proyecto */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckSquare className="h-5 w-5" />
+                      Actividades
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      {actividades.length > 0 ? 'Actividades registradas en el proyecto' : 'No hay actividades registradas aún'}
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{actividades.length}</Badge>
+                    <Button
+                      asChild
+                      size="sm"
+                      className="bg-[#008042] hover:bg-[#025d31] text-white"
+                    >
+                      <Link to={`/proyecto/${id}/actividades`}>
+                        Ver Tablero
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {actividades.length > 0 ? (
+                  <div className="space-y-3">
+                    {actividades.map((actividad: any, index: number) => (
+                      <div 
+                        key={actividad.id || index}
+                        className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <h4 className="font-medium mb-1">{actividad.titulo || actividad.nombre}</h4>
+                            {actividad.descripcion && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {actividad.descripcion}
+                              </p>
+                            )}
+                          </div>
+                          {actividad.estado && (
+                            <Badge variant="outline" className="text-xs whitespace-nowrap">
+                              {actividad.estado}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No hay actividades registradas</p>
+                    <p className="text-sm mt-1">Haz clic en "Ver Tablero" para gestionar actividades</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Progreso */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Progreso
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-3xl font-bold text-gray-900">
+                      {proyecto.porcentaje_avance}%
+                    </span>
+                    <span className="text-sm text-muted-foreground">Completado</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div
+                      className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all"
+                      style={{ width: `${proyecto.porcentaje_avance}%` }}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Información del Campo */}
+            {proyecto.campo_nombre && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    Campo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="font-medium">{proyecto.campo_nombre}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Fechas */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Fechas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {proyecto.fecha_creacion && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <Clock className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Creación</p>
+                        <p className="text-sm font-medium">
+                          {new Date(proyecto.fecha_creacion).toLocaleDateString('es-ES')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Resumen */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                        <CheckSquare className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Actividades</p>
+                        <p className="text-2xl font-bold">{actividades.length}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Vista pública (sin autenticación)
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Navbar */}
@@ -172,7 +445,7 @@ export default function ProyectoPublicDetail() {
               </div>
             </div>
           ) : (
-            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-8 md:p-12">
+            <div className="bg-gradient-to-r from-gray-700 via-gray-600 to-gray-700 p-8 md:p-12">
               <div className="flex items-center gap-3 mb-3">
                 <Badge className="bg-white/20 text-white border-0">
                   {proyecto.estado_nombre || 'En Progreso'}

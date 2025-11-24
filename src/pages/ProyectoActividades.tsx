@@ -92,6 +92,7 @@ export default function ProyectoActividades() {
   const [isEditing, setIsEditing] = useState(false);
   const [actividadToEdit, setActividadToEdit] = useState<Actividad | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isChangingState, setIsChangingState] = useState(false);
   
   // Estados del formulario
   const [formData, setFormData] = useState({
@@ -295,6 +296,10 @@ export default function ProyectoActividades() {
     });
 
     try {
+      // Mostrar loading overlay
+      setIsChangingState(true);
+      setIsDragging(false);
+      
       // Actualizar en el backend
       await actividadesService.cambiarEstado(actividadId, nuevoEstadoId);
 
@@ -330,7 +335,7 @@ export default function ProyectoActividades() {
         variant: "destructive",
       });
     } finally {
-      setIsDragging(false);
+      setIsChangingState(false);
     }
   };
 
@@ -614,7 +619,7 @@ export default function ProyectoActividades() {
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <p className="text-red-500 mb-4">{error || 'No se encontraron actividades'}</p>
-            <Link to={`/public/proyecto/${id}`}>
+            <Link to={`/projects/${id}`}>
               <Button>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Volver al Proyecto
@@ -631,7 +636,7 @@ export default function ProyectoActividades() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <Link to={`/public/proyecto/${id}`}>
+          <Link to={`/projects/${id}`}>
             <Button variant="ghost" size="sm" className="mb-2">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Volver al Proyecto
@@ -1323,6 +1328,10 @@ export default function ProyectoActividades() {
       <LoadingOverlay 
         isLoading={isEditing} 
         message="Actualizando actividad..." 
+      />
+      <LoadingOverlay 
+        isLoading={isChangingState} 
+        message="Cambiando estado de la actividad..." 
       />
     </div>
   );
