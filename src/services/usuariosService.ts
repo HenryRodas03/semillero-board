@@ -153,5 +153,28 @@ export const usuariosService = {
   }): Promise<any> {
     const response = await api.post('/usuarios/crear-con-campo', data);
     return response.data;
+  },
+
+  // Obtener lista de líderes (Admin Semillero y Admin Campo)
+  async getLideres(): Promise<{
+    lideres: Array<{
+      id: number;
+      nombre: string;
+      correo: string;
+      rol: {
+        id: number;
+        nombre: string;
+      };
+      es_lider_de: {
+        tipo: string;
+        nombre: string;
+        descripcion: string;
+        id: number;
+      } | null;
+    }>;
+    total: number;
+  }> {
+    const response = await api.get('/users/lideres');
+    return response.data;
   }
 };

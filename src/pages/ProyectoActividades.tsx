@@ -7,6 +7,7 @@ import { camposService } from "@/services/camposService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { ArrowLeft, Loader2, User, Calendar, AlertCircle, Plus, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -1313,6 +1314,16 @@ export default function ProyectoActividades() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Loading Overlays */}
+      <LoadingOverlay 
+        isLoading={isCreating} 
+        message="Creando actividad..." 
+      />
+      <LoadingOverlay 
+        isLoading={isEditing} 
+        message="Actualizando actividad..." 
+      />
     </div>
   );
 }

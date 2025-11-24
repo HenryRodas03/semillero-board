@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import { UserDialog } from '@/components/users/UserDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -917,6 +918,16 @@ export default function MiSemillero() {
 
         {/* Dialog: Crear usuario y agregar (UserDialog) */}
         <UserDialog open={openUserDialog} onOpenChange={setOpenUserDialog} onSave={onUserDialogSave} />
+
+        {/* Loading Overlays */}
+        <LoadingOverlay 
+          isLoading={submitting} 
+          message="Guardando cambios..." 
+        />
+        <LoadingOverlay 
+          isLoading={crearCampoSubmitting} 
+          message="Creando campo..." 
+        />
       </Tabs>
     </div>
   );

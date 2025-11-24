@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import { UserDialog } from '@/components/users/UserDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -806,7 +807,13 @@ export default function CampoDetailLider() {
         </Dialog>
 
       {/* Dialog: Crear usuario */}
-  <UserDialog open={openUserDialog} onOpenChange={(v) => { setOpenUserDialog(v); if (!v) setHideRoleOnUserDialog(false); }} hideRoleSelector={hideRoleOnUserDialog} onSave={onUserDialogSave} />
+      <UserDialog open={openUserDialog} onOpenChange={(v) => { setOpenUserDialog(v); if (!v) setHideRoleOnUserDialog(false); }} hideRoleSelector={hideRoleOnUserDialog} onSave={onUserDialogSave} />
+      
+      {/* Loading Overlay */}
+      <LoadingOverlay 
+        isLoading={crearProyectoSubmitting} 
+        message="Creando proyecto..." 
+      />
     </div>
   );
 }
