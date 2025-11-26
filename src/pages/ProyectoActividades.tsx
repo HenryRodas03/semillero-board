@@ -56,7 +56,7 @@ interface Actividad {
   fecha_creacion: string;
   fecha_actualizacion: string;
   fecha_fin?: string | null; // Fecha de finalización de la actividad
-  integrante?: Integrante;
+  responsable_nombre?: Integrante;
   responsable_id?: number; // ID del usuario responsable
 }
 
@@ -106,7 +106,7 @@ export default function ProyectoActividades() {
   });
 
   useEffect(() => {
-    console.log('🔄 useEffect disparado, id:', id);
+    console.log('useEffect disparado, id:', id);
     loadProjectData();
   }, [id]);
 
@@ -121,9 +121,6 @@ export default function ProyectoActividades() {
     // Cuando se cargan los integrantes y tenemos una actividad para editar,
     // buscar el integrante correcto y actualizar el formulario
     if (actividadToEdit && integrantes.length > 0 && !loadingIntegrantes) {
-      console.log('🔄 Buscando integrante para edición...');
-      console.log('👤 responsable_id de la actividad:', actividadToEdit.responsable_id);
-      console.log('📋 Integrantes disponibles:', integrantes);
       
       if (actividadToEdit.responsable_id) {
         // Buscar el integrante cuyo usuario.id coincida con responsable_id
@@ -131,16 +128,11 @@ export default function ProyectoActividades() {
           i => i.usuario?.id === actividadToEdit.responsable_id
         );
         
-        console.log('🔍 Integrante encontrado:', integranteEncontrado);
-        
         if (integranteEncontrado) {
           setFormData(prev => ({
             ...prev,
             id_integrante: integranteEncontrado.id
           }));
-          console.log('✅ ID de integrante establecido:', integranteEncontrado.id);
-        } else {
-          console.log('⚠️ No se encontró integrante con usuario.id =', actividadToEdit.responsable_id);
         }
       }
     }
@@ -148,7 +140,6 @@ export default function ProyectoActividades() {
 
   const loadProjectData = async () => {
     if (!id) {
-      console.log('⚠️ No hay ID de proyecto');
       return;
     }
     
@@ -156,25 +147,20 @@ export default function ProyectoActividades() {
       setLoading(true);
       
       // Cargar datos del proyecto para obtener el título
-      console.log('📋 Cargando datos del proyecto:', id);
       const projectData = await proyectosService.getById(parseInt(id));
-      console.log('✅ Datos del proyecto:', projectData);
       const titulo = projectData?.titulo || (projectData as any)?.project?.titulo || 'Proyecto';
       const campoId = projectData?.id_campo || (projectData as any)?.project?.id_campo;
       setProjectTitle(titulo);
       setProjectCampoId(campoId);
       
       // Cargar actividades
-      console.log('📋 Cargando actividades del proyecto:', id);
       const response = await proyectosService.getActividades(parseInt(id));
-      console.log('✅ Respuesta completa del backend:', response);
       
       // Verificar si la respuesta es un array directo o un objeto con estructura
       let dataToSet;
       
       if (Array.isArray(response)) {
         // Si el backend devuelve un array directo, construimos la estructura esperada
-        console.log('🔄 Backend devolvió array directo, transformando...');
         const actividades = response;
         dataToSet = {
           proyecto: {
@@ -191,30 +177,20 @@ export default function ProyectoActividades() {
         };
       } else if (response?.actividades) {
         // Si tiene la estructura correcta, la usamos tal cual
-        console.log('✅ Backend devolvió estructura correcta');
         dataToSet = response;
       } else {
-        console.error('❌ Formato de respuesta desconocido:', response);
+        console.error('Formato de respuesta desconocido:', response);
         setError('Formato de datos incorrecto del servidor');
         return;
       }
       
-      console.log('📊 Datos parseados:', {
-        proyecto: dataToSet?.proyecto,
-        total: dataToSet?.total,
-        actividades: dataToSet?.actividades?.length,
-        estadisticas: dataToSet?.estadisticas
-      });
       
       setData(dataToSet);
-      console.log('✅ Estado actualizado con data:', dataToSet);
     } catch (error: any) {
-      console.error('❌ Error al cargar actividades:', error);
-      console.error('❌ Detalles del error:', error.response?.data || error.message);
+      console.error('Error al cargar actividades:', error);
       setError('No se pudieron cargar las actividades del proyecto');
     } finally {
       setLoading(false);
-      console.log('🏁 Loading finalizado');
     }
   };
 
@@ -228,10 +204,7 @@ export default function ProyectoActividades() {
     }
   };
 
-  const getEstadoBadgeColor = (idEstado: number) => {
-    // Debug: Ver qué valores llegan
-    console.log('🎨 Badge Color - id_estado:', idEstado);
-    
+  const getEstadoBadgeColor = (idEstado: number) => {    
     // Usar colores directos
     switch (idEstado) {
       case 3: return { bg: '#16a34a', hover: '#15803d' }; // Verde - Finalizada
@@ -288,13 +261,6 @@ export default function ProyectoActividades() {
     const nuevoEstadoId = estadoMap[destination.droppableId];
     const actividadId = parseInt(draggableId);
 
-    console.log('🎯 Drag end:', {
-      actividadId,
-      desde: source.droppableId,
-      hacia: destination.droppableId,
-      nuevoEstadoId
-    });
-
     try {
       // Mostrar loading overlay
       setIsChangingState(true);
@@ -328,7 +294,7 @@ export default function ProyectoActividades() {
       });
 
     } catch (error) {
-      console.error('❌ Error al actualizar estado:', error);
+      console.error('Error al actualizar estado:', error);
       toast({
         title: "❌ Error",
         description: "No se pudo actualizar el estado de la actividad",
@@ -346,19 +312,15 @@ export default function ProyectoActividades() {
   // Función para cargar integrantes del campo
   const loadIntegrantes = async () => {
     if (!projectCampoId) {
-      console.log('⚠️ No hay ID de campo para cargar integrantes');
       return;
     }
 
     try {
       setLoadingIntegrantes(true);
-      console.log('👥 Cargando integrantes del campo:', projectCampoId);
       const response = await camposService.getIntegrantes(projectCampoId);
-      console.log('✅ Integrantes cargados:', response);
-      console.log('🔍 IDs disponibles:', response.map((i: any) => i.id));
       setIntegrantes(response || []);
     } catch (error) {
-      console.error('❌ Error al cargar integrantes:', error);
+      console.error('Error al cargar integrantes:', error);
       toast({
         title: "Advertencia",
         description: "No se pudieron cargar los integrantes",
@@ -431,7 +393,7 @@ export default function ProyectoActividades() {
       });
 
     } catch (error: any) {
-      console.error('❌ Error al crear actividad:', error);
+      console.error('Error al crear actividad:', error);
       const errorMessage = error.response?.data?.message || 
                           error.response?.data?.error || 
                           "No se pudo crear la actividad";
@@ -446,10 +408,6 @@ export default function ProyectoActividades() {
   };
 
   const handleEditarActividad = (actividad: Actividad) => {
-    console.log('📝 Editando actividad:', actividad);
-    console.log('👤 Integrante actual:', actividad.integrante);
-    console.log('📅 fecha_creacion:', actividad.fecha_creacion);
-    console.log('📅 fecha_fin:', actividad.fecha_fin);
     
     setActividadToEdit(actividad);
     
@@ -459,10 +417,9 @@ export default function ProyectoActividades() {
       try {
         // Convertir "2025-11-17 03:18:56" a "2025-11-17"
         const fechaFormateada = fecha.split(' ')[0];
-        console.log(`✅ Fecha formateada: ${fecha} → ${fechaFormateada}`);
         return fechaFormateada;
       } catch (e) {
-        console.error('❌ Error formateando fecha:', fecha, e);
+        console.error('Error formateando fecha:', fecha, e);
         return '';
       }
     };
@@ -477,11 +434,6 @@ export default function ProyectoActividades() {
       id_integrante: undefined, // Lo estableceremos en el useEffect
       fecha_creacion: formatearFecha(actividad.fecha_creacion),
       fecha_fin: formatearFecha(actividad.fecha_fin) // Usar fecha_fin, no fecha_actualizacion
-    });
-    
-    console.log('📝 FormData inicial:', {
-      fecha_creacion: formatearFecha(actividad.fecha_creacion),
-      fecha_fin: formatearFecha(actividad.fecha_fin)
     });
     
     setIsEditDialogOpen(true);
@@ -547,7 +499,7 @@ export default function ProyectoActividades() {
       });
 
     } catch (error: any) {
-      console.error('❌ Error al actualizar actividad:', error);
+      console.error('Error al actualizar actividad:', error);
       const errorMessage = error.response?.data?.message || 
                           error.response?.data?.error || 
                           "No se pudo actualizar la actividad";
@@ -580,7 +532,7 @@ export default function ProyectoActividades() {
       });
 
     } catch (error: any) {
-      console.error('❌ Error al eliminar actividad:', error);
+      console.error('Error al eliminar actividad:', error);
       const errorMessage = error.response?.data?.message || 
                           error.response?.data?.error || 
                           "No se pudo eliminar la actividad";
@@ -600,9 +552,6 @@ export default function ProyectoActividades() {
     enProgreso: data?.actividades?.filter(a => a.id_estado === 2) || [],
     finalizadas: data?.actividades?.filter(a => a.id_estado === 3) || [],
   };
-
-  console.log('🗂️ Actividades agrupadas:', actividadesPorEstado);
-  console.log('📊 Data actual:', data);
 
   if (loading) {
     return (
@@ -758,10 +707,10 @@ export default function ProyectoActividades() {
                             </Badge>
                           </div>
 
-                          {actividad.integrante && (
+                          {actividad.responsable_nombre && (
                             <div className="flex items-center text-sm text-gray-500 pt-2 border-t">
                               <User className="h-4 w-4 mr-2" />
-                              <span>{actividad.integrante.nombre}</span>
+                              <span>{typeof actividad.responsable_nombre === 'object' ? actividad.responsable_nombre.nombre : actividad.responsable_nombre}</span>
                             </div>
                           )}
 
@@ -855,10 +804,10 @@ export default function ProyectoActividades() {
                             </Badge>
                           </div>
 
-                          {actividad.integrante && (
+                          {actividad.responsable_nombre && (
                             <div className="flex items-center text-sm text-gray-500 pt-2 border-t">
                               <User className="h-4 w-4 mr-2" />
-                              <span>{actividad.integrante.nombre}</span>
+                              <span>{typeof actividad.responsable_nombre === 'object' ? actividad.responsable_nombre.nombre : actividad.responsable_nombre}</span>
                             </div>
                           )}
 
@@ -952,10 +901,10 @@ export default function ProyectoActividades() {
                             </Badge>
                           </div>
 
-                          {actividad.integrante && (
+                          {actividad.responsable_nombre && (
                             <div className="flex items-center text-sm text-gray-500 pt-2 border-t">
                               <User className="h-4 w-4 mr-2" />
-                              <span>{actividad.integrante.nombre}</span>
+                              <span>{typeof actividad.responsable_nombre === 'object' ? actividad.responsable_nombre.nombre : actividad.responsable_nombre}</span>
                             </div>
                           )}
 
@@ -1239,7 +1188,6 @@ export default function ProyectoActividades() {
                 <Select
                   value={formData.id_integrante?.toString() || "sin-asignar"}
                   onValueChange={(value) => {
-                    console.log('🔄 Cambiando integrante a:', value);
                     setFormData({ 
                       ...formData, 
                       id_integrante: value === "sin-asignar" ? undefined : parseInt(value)
@@ -1252,7 +1200,6 @@ export default function ProyectoActividades() {
                   <SelectContent>
                     <SelectItem value="sin-asignar">Sin asignar</SelectItem>
                     {integrantes.map((integrante) => {
-                      console.log('🔹 Opción:', integrante.id, integrante.nombre, '- Seleccionado?', integrante.id.toString() === formData.id_integrante?.toString());
                       return (
                         <SelectItem key={integrante.id} value={integrante.id.toString()}>
                           {integrante.nombre} {integrante.correo ? `(${integrante.correo})` : ''}
