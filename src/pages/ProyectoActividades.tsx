@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { ArrowLeft, Loader2, User, Calendar, AlertCircle, Plus, MoreVertical, Edit, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
@@ -93,6 +93,7 @@ export default function ProyectoActividades() {
   const [actividadToEdit, setActividadToEdit] = useState<Actividad | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isChangingState, setIsChangingState] = useState(false);
+  const [tareaToDelete, setTareaToDelete] = useState<Actividad | null>(null);
   
   // Estados del formulario
   const [formData, setFormData] = useState({
@@ -513,24 +514,26 @@ export default function ProyectoActividades() {
     }
   };
 
-  const handleEliminarActividad = async (actividadId: number, titulo: string) => {
-    if (!window.confirm(`¿Estás seguro de que deseas eliminar la actividad "${titulo}"?`)) {
-      return;
-    }
+  const handleEliminarActividad = async () => {
+    if (!tareaToDelete) return;
+    
+    // if (!window.confirm(`¿Estás seguro de que deseas eliminar la actividad "${titulo}"?`)) {
+    //   return;
+    // }
 
     try {
       setIsDeleting(true);
       
-      await actividadesService.eliminarActividad(actividadId);
+      await actividadesService.eliminarActividad(tareaToDelete.id);
       
       // Recargar actividades
       await loadProjectData();
       
       toast({
         title: "✅ Actividad eliminada",
-        description: `"${titulo}" se eliminó exitosamente`,
+        description: `"${tareaToDelete.titulo}" se eliminó exitosamente`,
       });
-
+      setTareaToDelete(null);
     } catch (error: any) {
       console.error('Error al eliminar actividad:', error);
       const errorMessage = error.response?.data?.message || 
@@ -686,7 +689,10 @@ export default function ProyectoActividades() {
                                 Editar
                               </DropdownMenuItem>
                               <DropdownMenuItem 
-                                onClick={() => handleEliminarActividad(actividad.id, actividad.titulo)}
+                                onClick={() => {
+                                  setTareaToDelete(actividad);
+                                  handleEliminarActividad();
+                                }}
                                 className="text-red-600"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -783,7 +789,10 @@ export default function ProyectoActividades() {
                                 Editar
                               </DropdownMenuItem>
                               <DropdownMenuItem 
-                                onClick={() => handleEliminarActividad(actividad.id, actividad.titulo)}
+                                onClick={() => {
+                                  setTareaToDelete(actividad);
+                                  handleEliminarActividad();
+                                }}
                                 className="text-red-600"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -880,7 +889,10 @@ export default function ProyectoActividades() {
                                 Editar
                               </DropdownMenuItem>
                               <DropdownMenuItem 
-                                onClick={() => handleEliminarActividad(actividad.id, actividad.titulo)}
+                                onClick={() => {
+                                  setTareaToDelete(actividad);
+                                  handleEliminarActividad();
+                                }}
                                 className="text-red-600"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -1267,6 +1279,28 @@ export default function ProyectoActividades() {
         </DialogContent>
       </Dialog>
 
+      {/* AlertDialog para confirmar eliminación */}
+      <AlertDialog open={!!tareaToDelete} onOpenChange={() => setTareaToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El tarea y todos sus datos asociados serán eliminados permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleEliminarActividad}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Loading Overlays */}
       <LoadingOverlay 
         isLoading={isCreating} 
@@ -1275,6 +1309,10 @@ export default function ProyectoActividades() {
       <LoadingOverlay 
         isLoading={isEditing} 
         message="Actualizando actividad..." 
+      />
+      <LoadingOverlay 
+        isLoading={isDeleting} 
+        message="Eliminando actividad..." 
       />
       <LoadingOverlay 
         isLoading={isChangingState} 
